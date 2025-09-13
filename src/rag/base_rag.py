@@ -23,19 +23,19 @@ logger = get_logger(__name__)
 
 
 class BaseRAG(ABC):
-    def __init__(self, 
-                 content_path: Path,
-                 index_path: Optional[str] = None,
-                 rerank: bool = False,
-                 chunking_type: str = "recursive"):
+    def __init__(
+        self,
+        content_path: Path,
+        index_path: Optional[str] = None,
+        rerank: bool = False,
+        chunking_type: str = "recursive",
+    ):
         self.rerank = rerank
         self.index_path = index_path or "indexes"
         self.embedder = CohereEmbedding()
 
-        logger.info(
-            f"Initializing RAG system. Model temperature {TEMPERATURE}..."
-        )
-        
+        logger.info(f"Initializing RAG system. Model temperature {TEMPERATURE}...")
+
         self._initialize_models()
 
         if self.rerank:
@@ -53,7 +53,7 @@ class BaseRAG(ABC):
 
     def _create_embeddings(self, texts: list, is_query: bool = False) -> list:
         return self.embedder.embed(texts, is_query)
-    
+
     def _get_index_path(self, content_path: Path) -> str:
         """Generate unique index path based on content."""
         content_hash = (
@@ -85,7 +85,7 @@ class BaseRAG(ABC):
             system_prompt += f"\n\n### Current question: {query}"
 
         return system_prompt.strip()
-    
+
     def _rerank_docs(self, query: str, docs):
         """
         Refine the top-k retrieved chunks for relevance
@@ -100,7 +100,7 @@ class BaseRAG(ABC):
             return_documents=True,
         )
         return reranked
-      
+
     def _find_relevant_context(self, query: str, top_k: int = 5) -> str:
         """Find relevant context using similarity search."""
         query_embedding = self._create_embeddings([query], is_query=True)[0]
@@ -126,7 +126,7 @@ class BaseRAG(ABC):
 
         logger.info("Creating new index...")
         return self._create_vectorstore(content_path)
-    
+
     def _create_vectorstore(self, content_path: Path) -> FAISS:
         """Create FAISS vectorstore from content with incremental embedding saving."""
         with open(content_path, "r", encoding="utf-8") as f:
@@ -197,11 +197,11 @@ class BaseRAG(ABC):
 
                 # with open(temp_progress_path, "w") as f:
                 #     f.write(str(processed_chunks))
-                
+
                 write_to_file.write(
                     str(processed_chunks),
                     temp_progress_path,
-                    )
+                )
 
                 self._save_vectorstore(vectorstore, temp_index_path)
 
@@ -230,7 +230,7 @@ class BaseRAG(ABC):
             f"Vectorstore creation completed successfully with {len(chunks)} chunks"
         )
         return vectorstore
-    
+
     def _clean_html_content(self, content: str) -> str:
         """Clean HTML content and convert to markdown."""
         h = html2text.HTML2Text()
@@ -260,11 +260,11 @@ class BaseRAG(ABC):
     def _create_chunks(self, text: str) -> List[str]:
         """Create chunks using the specified chunking method."""
         splitter = RecursiveCharacterTextSplitter(
-                chunk_size=CHUNK_SIZE,
-                chunk_overlap=CHUNK_OVERLAP,
-                length_function=len,
-                separators=["\n\n", "\n", " ", ""],
-            )
+            chunk_size=CHUNK_SIZE,
+            chunk_overlap=CHUNK_OVERLAP,
+            length_function=len,
+            separators=["\n\n", "\n", " ", ""],
+        )
 
         logger.info("Splitting data using langchain's RecursiveCharacterTextSplitter")
         return splitter.split_text(text)

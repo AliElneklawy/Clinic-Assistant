@@ -1,17 +1,16 @@
 from pathlib import Path
-from typing import Optional, Dict, Callable
+from typing import Callable, Dict, Optional
 
 from langchain_community.document_loaders import (
-    TextLoader,
-    PyMuPDFLoader,
     Docx2txtLoader,
+    PyMuPDFLoader,
+    TextLoader,
     UnstructuredCSVLoader,
     UnstructuredExcelLoader,
     UnstructuredPowerPointLoader,
 )
 
 from settings.logger import get_logger
-
 
 logger = get_logger(__name__)
 
@@ -32,7 +31,9 @@ class FileLoader:
 
     DOCLING_FORMATS = [".pdf", ".docx", ".xlsx", ".pptx", ".csv", ".png", ".jpeg"]
 
-    def __init__(self, file_path: str, content_path: str, client: str = "langchain"):
+    def __init__(
+        self, folder_path: Path, content_path: Path, client: str = "langchain"
+    ):
         """
         Initialize FileLoader with file paths and client type.
 
@@ -41,7 +42,8 @@ class FileLoader:
             content_path: Path where extracted content will be saved
             client: Type of loader client ('langchain' or 'docling')
         """
-        self.file_path = Path(file_path)
+
+        self.files = self.init_files(folder_path)
         self.content_path = Path(content_path)
         self.client = client.lower()
 
@@ -49,29 +51,41 @@ class FileLoader:
             logger.warning(f"Invalid client type: {client}. Defaulting to langchain.")
             self.client = "langchain"
 
+    def init_files(self, folder_path: Path) -> Path | list[Path]:
+        logger.info(f"Loading files in {folder_path}...")
+
+        files = []
+        for pdf_file in folder_path.glob("*.pdf"):
+            logger.info(f"Found {pdf_file.name}. Appending...")
+            files.append(pdf_file)
+
+        return files
+
     def extract_from_file(self) -> Optional[list]:
         """
-        Extract content from file and append to content_path.
+        Extract content from files and append to content_path.
 
         Returns:
             List of extracted documents or None if extraction fails
         """
         try:
-            file_ext = self._get_file_ext()
-            loader = self._get_loader(file_ext)
+            documents = []
+            for file in self.files:
+                file_ext = self._get_file_ext(file)
+                loader = self._get_loader(file_ext)
+                if loader:
+                    doc = loader(file.as_posix()).load()
+                    documents.extend(doc)
+                else:
+                    logger.warning(f"No suitable loader found for {file}")
+                    continue
 
-            if not loader:
-                logger.warning(
-                    f"No loader found for extension {file_ext}. Skipping file..."
-                )
-                return None
-
-            documents = loader(self.file_path.as_posix()).load()
-            self._append_to_content(documents)
-            return documents
+            if documents:
+                self._append_to_content(documents)
+                return documents
 
         except Exception as e:
-            logger.error(f"Error extracting content from {self.file_path}: {str(e)}")
+            logger.error(f"Error extracting content from: {str(e)}")
             return None
 
     def _get_loader(self, file_ext: str) -> Optional[Callable]:
@@ -91,17 +105,19 @@ class FileLoader:
 
     def _append_to_content(self, documents: list) -> None:
         """Append extracted content to the specified content file."""
+        mode = "a" if self.content_path.exists() else "w"
+
         try:
-            with open(self.content_path, "a", encoding="utf-8") as f:
+            with open(self.content_path, mode, encoding="utf-8") as f:
                 for doc in documents:
                     f.write(doc.page_content + "\n")
         except IOError as e:
             logger.error(f"Error writing to content file {self.content_path}: {str(e)}")
             raise
 
-    def _get_file_ext(self) -> str:
+    def _get_file_ext(self, file_path: Path) -> str:
         """Get file extension from file_path."""
-        return self.file_path.suffix.lower()
+        return file_path.suffix.lower()
 
     @property
     def supported_formats(self):

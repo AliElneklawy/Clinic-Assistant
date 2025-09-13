@@ -9,7 +9,9 @@ logging.basicConfig(
     format="%(asctime)s:%(levelname)s:%(name)s:%(funcName)s:%(lineno)d - %(message)s",
     handlers=[
         logging.handlers.RotatingFileHandler(
-            create_folder.create(LOGS_DIR) / "logs.log", maxBytes=1024**3, backupCount=10
+            create_folder.create(LOGS_DIR) / "logs.log",
+            maxBytes=1024**3,
+            backupCount=10,
         ),
         logging.StreamHandler(),
     ],

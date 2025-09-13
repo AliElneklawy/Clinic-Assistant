@@ -1,6 +1,7 @@
 import cohere
 
 from rag.base_rag import BaseRAG
+
 # from embeddings.cohere_embedding import CohereEmbedding
 from settings.logger import get_logger
 from settings import rag_config
@@ -39,5 +40,5 @@ class CohereRAG(BaseRAG):
         except Exception as e:
             logger.error(f"Error getting Cohere response: {e}")
             return "I'm sorry, I couldn't process your request at the moment."
-        
+
         return response_text
