@@ -327,6 +327,8 @@ dependencies = [
     { name = "faiss-cpu" },
     { name = "html2text" },
     { name = "langchain-docling" },
+    { name = "langchain-tavily" },
+    { name = "pre-commit" },
     { name = "python-dotenv" },
     { name = "requests" },
     { name = "scrapegraphai" },
@@ -340,6 +342,8 @@ requires-dist = [
     { name = "faiss-cpu", specifier = ">=1.12.0" },
     { name = "html2text", specifier = ">=2025.4.15" },
     { name = "langchain-docling", specifier = ">=1.1.0" },
+    { name = "langchain-tavily", specifier = ">=0.2.11" },
+    { name = "pre-commit", specifier = ">=4.3.0" },
     { name = "python-dotenv", specifier = ">=1.1.1" },
     { name = "requests", specifier = ">=2.32.5" },
     { name = "scrapegraphai", specifier = ">=1.62.0" },
@@ -1269,6 +1273,21 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/7e/19/167d9ad1b6bb75406c4acceda01ef0dc1101c7f629f74441fe8a787fb190/langchain_openai-0.3.32.tar.gz", hash = "sha256:782ad669bd1bdb964456d8882c5178717adcfceecb482cc20005f770e43d346d", size = 782982 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/e6/3d/e22ee65fff79afe7bdfbd67844243eb279b440c882dad9e4262dcc87131f/langchain_openai-0.3.32-py3-none-any.whl", hash = "sha256:3354f76822f7cc76d8069831fe2a77f9bc7ff3b4f13af788bd94e4c6e853b400", size = 74531 },
+]
+
+[[package]]
+name = "langchain-tavily"
+version = "0.2.11"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "aiohttp" },
+    { name = "langchain" },
+    { name = "langchain-core" },
+    { name = "requests" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/17/bb/63ce4058684dddf525af3c8e5dcfab15c5f17515d20241ef6e726ac9e8b7/langchain_tavily-0.2.11.tar.gz", hash = "sha256:ab4f5d0f7fcb276a3905aef2e38c21a334b6cbfc86b405a3238fdc9c6eae1290", size = 22382 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a8/5a/9326f125b4d3055a96200a5035016efe1aac46149cdafc7182e56710fcfe/langchain_tavily-0.2.11-py3-none-any.whl", hash = "sha256:358317c18fbb26500bca665301450e38945f1f4f6a6f4e06406c7674a76c8d5c", size = 26187 },
 ]
 
 [[package]]
