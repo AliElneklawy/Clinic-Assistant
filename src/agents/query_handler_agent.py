@@ -65,8 +65,17 @@ class QueryHandlerAgent(BaseAgent):
 
         Creates two tools:
         1. search_clinic_database: Searches the internal clinic knowledge base using RAG
-        2. TavilySearch: Searches the web for additional medical information
+        2. search_web: Searches the web for additional medical information with URL references
         """
+        # Initialize Tavily search client
+        self.tavily_search = TavilySearch(
+            tavily_api_key=get_api_key.get_key("TAVILY_SEARCH"),
+            max_results=self.max_results,
+            search_depth="advanced",
+            include_answer=True,
+            include_raw_content=False,
+        )
+        
         self.tools = [
             Tool(
                 name="search_clinic_database",
@@ -76,15 +85,13 @@ class QueryHandlerAgent(BaseAgent):
                     "Use this FIRST for any medical queries. "
                 ),
             ),
-            TavilySearch(
-                tavily_api_key=get_api_key.get_key("TAVILY_SEARCH"),
-                max_results=self.max_results,
-                search_depth="advanced",
-                include_answer=True,
-                include_raw_content=False,
+            Tool(
+                name="search_web",
+                func=self._search_web,
                 description=(
                     "Search the web for medical information when the clinic database "
                     "doesn't have sufficient information. Use this as a secondary source. "
+                    "Returns search results with URLs as references."
                 ),
             ),
         ]
@@ -142,6 +149,46 @@ class QueryHandlerAgent(BaseAgent):
         except Exception as e:
             logger.error(f"Error searching clinic database: {e}")
             return f"Unable to search clinic database. Error: {str(e)}"
+
+    def _search_web(self, query: str) -> str:
+        """
+        Search the web using Tavily and format results with URLs as references.
+
+        Args:
+            query: The search query from the user
+
+        Returns:
+            Formatted response with content and URL references
+        """
+        try:
+            logger.info(f"Searching web for: {query}")
+            
+            # Use Tavily search
+            results = self.tavily_search.invoke(query)
+            
+            # Parse the results - Tavily returns a list of dictionaries
+            if isinstance(results, list) and len(results) > 0:
+                formatted_response = "Web Search Results:\n\n"
+                
+                for idx, result in enumerate(results, 1):
+                    if isinstance(result, dict):
+                        content = result.get('content', '')
+                        url = result.get('url', '')
+                        
+                        if content:
+                            formatted_response += f"{idx}. {content}\n"
+                        if url:
+                            formatted_response += f"   Source: {url}\n\n"
+                
+                logger.info("Successfully retrieved web search results with URLs")
+                return formatted_response
+            else:
+                # Fallback if results format is different
+                return f"Web search results: {results}"
+                
+        except Exception as e:
+            logger.error(f"Error searching web: {e}")
+            return f"Unable to search web. Error: {str(e)}"
 
     def run(self, query: str):
         """

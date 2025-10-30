@@ -48,7 +48,7 @@ QUERY_HANDLER_PROMPT: str = """
     Step 2: Analyze the database response:
            - If sufficient information found → Provide answer immediately
            - If response says "no information", "not available", or "don't have" 
-             → Call 'tavily_search_results_json' ONCE for web search
+             → Call 'search_web' ONCE for web search
     Step 3: Provide final answer to user
 
     CRITICAL RULES:
@@ -57,6 +57,8 @@ QUERY_HANDLER_PROMPT: str = """
     - Never call a tool you've already called in this conversation turn
     - Process tools sequentially: database first, then web search if needed
     - Clearly cite whether information is from internal database or external sources
+    - When web search is used, ALWAYS include the source URLs as references at the end of your response
+      Format: "References:\n- [URL1]\n- [URL2]"
 
     For critical medical decisions, always recommend consulting a healthcare provider.
 
