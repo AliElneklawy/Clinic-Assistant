@@ -35,6 +35,14 @@ class QueryHandlerAgent(BaseAgent):
             tool_call_mode="single"  # Disable parallel tool calling
         )
 
+        self.tavily_search = TavilySearch(
+            tavily_api_key=get_api_key.get_key("TAVILY_SEARCH"),
+            max_results=self.max_results,
+            search_depth="advanced",
+            include_answer=True,
+            include_raw_content=False,
+        )
+
         logger.info("Initializing RAG system...")
         self.rag = CohereRAG(
             content_path=content_path, index_path=index_path, rerank=rerank
@@ -66,16 +74,7 @@ class QueryHandlerAgent(BaseAgent):
         Creates two tools:
         1. search_clinic_database: Searches the internal clinic knowledge base using RAG
         2. search_web: Searches the web for additional medical information with URL references
-        """
-        # Initialize Tavily search client
-        self.tavily_search = TavilySearch(
-            tavily_api_key=get_api_key.get_key("TAVILY_SEARCH"),
-            max_results=self.max_results,
-            search_depth="advanced",
-            include_answer=True,
-            include_raw_content=False,
-        )
-        
+        """      
         self.tools = [
             Tool(
                 name="search_clinic_database",
@@ -162,11 +161,9 @@ class QueryHandlerAgent(BaseAgent):
         """
         try:
             logger.info(f"Searching web for: {query}")
-            
-            # Use Tavily search
+
             results = self.tavily_search.invoke(query)
             
-            # Parse the results - Tavily returns a list of dictionaries
             if isinstance(results, list) and len(results) > 0:
                 formatted_response = "Web Search Results:\n\n"
                 
@@ -183,7 +180,6 @@ class QueryHandlerAgent(BaseAgent):
                 logger.info("Successfully retrieved web search results with URLs")
                 return formatted_response
             else:
-                # Fallback if results format is different
                 return f"Web search results: {results}"
                 
         except Exception as e:
