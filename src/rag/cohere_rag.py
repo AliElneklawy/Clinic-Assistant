@@ -13,7 +13,7 @@ class CohereRAG(BaseRAG):
     def _initialize_models(self, model_name: str = None):
         config = rag_config.CohereConfig()
         api = get_api_key.get_key("COHERE")
-        self.cohere_client = cohere.AsyncClient(api)
+        self.cohere_client = cohere.AsyncClientV2(api)
         self.cohere_model = model_name or next(
             iter(config.AVAILABLE_MODELS)
         )  # get the first model in the list
@@ -26,15 +26,20 @@ class CohereRAG(BaseRAG):
         """Get response using Cohere."""
         context = self._find_relevant_context(query)
         system_prompt = self._generate_system_prompt(query, user_id, context)
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": query}
+        ]
+        # messages.append({"role": "user", "content": query})
 
         try:
-            response = await self.cohere_client.generate(
+            response = await self.cohere_client.chat(
                 model=self.cohere_model,
-                prompt=system_prompt,
+                messages=messages,
                 max_tokens=rag_config.MAX_OUT_TOKENS,
                 temperature=rag_config.TEMPERATURE,
             )
-            response_text = response.generations[0].text.strip()
+            response_text = response.message.content[0].text.strip()
 
         except Exception as e:
             logger.error(f"Error getting Cohere response: {e}")

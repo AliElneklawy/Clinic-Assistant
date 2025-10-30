@@ -44,7 +44,7 @@ class BaseRAG(ABC):
 
         if content_path:
             logger.info("Loading knowledge base...")
-            self.vectorstore = self._load_or_create_vectorstore(content_path)
+            self.vectorstore = self._load_or_create_vectorstore(content_path, index_path)
             self.current_index_path = self._get_index_path(content_path)
 
     @abstractmethod
@@ -116,8 +116,11 @@ class BaseRAG(ABC):
 
         return "\n\n".join([doc.page_content for doc in docs])
 
-    def _load_or_create_vectorstore(self, content_path: Path) -> FAISS:
+    def _load_or_create_vectorstore(self, content_path: Path, index_path: Path = None) -> FAISS:
         """Load existing index or create new one."""
+        if index_path is not None:
+            return self._load_vectorstore(index_path)
+        
         index_path = self._get_index_path(content_path)
 
         if Path(index_path).exists():
