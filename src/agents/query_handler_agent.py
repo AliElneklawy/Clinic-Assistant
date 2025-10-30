@@ -30,7 +30,10 @@ class QueryHandlerAgent(BaseAgent):
             max_search_results: Maximum number of search results to retrieve (default: 3)
         """
         self.max_results = max_search_results
-        self.llm = ChatCohere(cohere_api_key=get_api_key.get_key("COHERE"))
+        self.llm = ChatCohere(
+            cohere_api_key=get_api_key.get_key("COHERE"),
+            tool_call_mode="single"  # Disable parallel tool calling
+        )
 
         logger.info("Initializing RAG system...")
         self.rag = CohereRAG(
@@ -98,7 +101,12 @@ class QueryHandlerAgent(BaseAgent):
         )
 
         self.agent_executor = AgentExecutor(
-            agent=self.agent, tools=self.tools, verbose=True
+            agent=self.agent,
+            tools=self.tools,
+            verbose=True,
+            max_iterations=5,  # Limit iterations to prevent unnecessary loops
+            early_stopping_method="generate",  # Stop when a final answer is generated
+            handle_parsing_errors=True,  # Handle any parsing errors gracefully
         )
 
     def _search_clinic_database(self, query: str) -> str:
@@ -114,8 +122,18 @@ class QueryHandlerAgent(BaseAgent):
         try:
             logger.info(f"Searching clinic database for: {query}")
 
+            # Get or create a new event loop to avoid "Event loop is closed" errors
+            try:
+                loop = asyncio.get_event_loop()
+                if loop.is_closed():
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+            except RuntimeError:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+
             # Run the async method synchronously
-            response = asyncio.run(
+            response = loop.run_until_complete(
                 self.rag.get_response(query=query, user_id=uuid.uuid4())
             )
 
