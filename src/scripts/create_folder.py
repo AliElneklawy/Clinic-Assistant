@@ -1,11 +1,12 @@
 from pathlib import Path
 
+
 def create(path: str):
     """
     Create parent directory for a given file path or create the directory itself.
     """
     p = Path(path)
-    
+
     if p.suffix:
         parent = p.parent
         if not parent.exists():

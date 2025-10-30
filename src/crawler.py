@@ -1,18 +1,21 @@
-import os
-import logging
 import asyncio
-import aiohttp
+import logging
+import os
 import uuid
 from pathlib import Path
-from bs4 import BeautifulSoup
-from settings.paths import DATA_DIR
-from crawl4ai import AsyncWebCrawler
-from scripts import get_api_key, create_folder
+from typing import Dict, Iterable, List, Optional, Set
 from urllib.parse import urljoin, urlparse
-from typing import Set, List, Optional, Iterable, Dict
+
+import aiohttp
+from bs4 import BeautifulSoup
+from crawl4ai import AsyncWebCrawler
+
+from scripts import create_folder, get_api_key
 from settings.logger import get_logger
+from settings.paths import DATA_DIR
 
 logger = get_logger(__name__)
+
 
 class AsyncCrawler:
     def __init__(
@@ -39,7 +42,7 @@ class AsyncCrawler:
         self.output_file = output_folder / f"{domain_name}.txt"
         self.client = client
         self.max_concurrent_requests = max_concurrent_requests
-        
+
         self.session = None
         self.visited_urls: Set[str] = set()
         self.urls_to_visit: List[tuple[str, int]] = [(base_url, 0)]
@@ -67,11 +70,12 @@ class AsyncCrawler:
                 exclude_external_links=True,
                 exclude_social_media_links=True,
                 only_text=True,
-                wait_for_images=False, 
+                wait_for_images=False,
             )
             self.crawler = None
         elif self.client == "scrapegraph":
             from scrapegraph_py import Client
+
             self.sgai_client = Client(api_key=get_api_key.get_key("SGAI"))
 
     async def _init_session(self):
@@ -79,10 +83,7 @@ class AsyncCrawler:
         if self.session is None:
             timeout = aiohttp.ClientTimeout(total=20)
             connector = aiohttp.TCPConnector(limit=self.max_concurrent_requests)
-            self.session = aiohttp.ClientSession(
-                timeout=timeout, 
-                connector=connector
-            )
+            self.session = aiohttp.ClientSession(timeout=timeout, connector=connector)
 
     async def extract_content(
         self, link: str, webpage_only: bool = False, max_depth: int = None
@@ -91,9 +92,11 @@ class AsyncCrawler:
         Scrape content from a URL or list of URLs with fallback between clients.
         """
         await self._init_session()
-        
+
         url_list = (
-            [link] if webpage_only else await self._extract_urls_fast(max_depth=max_depth)
+            [link]
+            if webpage_only
+            else await self._extract_urls_fast(max_depth=max_depth)
         )
 
         with open(self.output_file, "w", encoding="utf-8") as file:
@@ -137,44 +140,43 @@ class AsyncCrawler:
         while self.urls_to_visit and (max_pages is None or pages_crawled < max_pages):
             current_batch = []
             batch_size = min(self.max_concurrent_requests, len(self.urls_to_visit))
-            
+
             for _ in range(batch_size):
                 if not self.urls_to_visit:
                     break
-                    
+
                 current_url, current_depth = self.urls_to_visit.pop(0)
-                
+
                 if current_url in self.visited_urls:
                     continue
                 if max_depth is not None and current_depth >= max_depth:
                     continue
                 if max_pages is not None and pages_crawled >= max_pages:
                     break
-                    
+
                 current_batch.append((current_url, current_depth))
 
             if not current_batch:
                 break
 
             logger.info(f"Processing batch of {len(current_batch)} URLs")
-            
+
             tasks = [
-                self._crawl_page_async(url, depth + 1) 
-                for url, depth in current_batch
+                self._crawl_page_async(url, depth + 1) for url, depth in current_batch
             ]
-            
+
             batch_results = await asyncio.gather(*tasks, return_exceptions=True)
-            
+
             for i, (url, depth) in enumerate(current_batch):
                 result = batch_results[i]
-                
+
                 if isinstance(result, Exception):
                     logger.error(f"Failed to crawl {url}: {result}")
                     continue
-                    
+
                 self.visited_urls.add(url)
                 pages_crawled += 1
-                
+
                 for link, link_depth in result:
                     if (
                         link not in self.visited_urls
@@ -184,7 +186,9 @@ class AsyncCrawler:
                         self.urls_to_visit.append((link, link_depth))
                         self.url_cache.add(link)
 
-        logger.info(f"Fast crawling finished. Total pages crawled: {len(self.visited_urls)}")
+        logger.info(
+            f"Fast crawling finished. Total pages crawled: {len(self.visited_urls)}"
+        )
         return self.visited_urls
 
     async def _crawl_page_async(self, url: str, depth: int) -> List[tuple[str, int]]:
@@ -196,10 +200,10 @@ class AsyncCrawler:
                 if response.status != 200:
                     logger.warning(f"HTTP {response.status} for {url}")
                     return []
-                
+
                 content = await response.text()
                 soup = BeautifulSoup(content, "html.parser")
-                
+
         except Exception as e:
             logger.error(f"Error crawling {url}: {e}")
             return []
@@ -313,17 +317,14 @@ class AsyncCrawler:
         if self.client == "crawl4ai" and self.crawler is not None:
             await self.crawler.close()
         elif self.client == "scrapegraph":
-            if hasattr(self.sgai_client, 'close'):
+            if hasattr(self.sgai_client, "close"):
                 self.sgai_client.close()
 
 
 async def test():
     link = "https://www.news-medical.net/"
 
-    crawler = AsyncCrawler(
-        link, 
-        max_concurrent_requests=15
-    )
+    crawler = AsyncCrawler(link, max_concurrent_requests=15)
     try:
         content_path = await crawler.extract_content(link, max_depth=3)
     finally:
@@ -332,4 +333,5 @@ async def test():
 
 if __name__ == "__main__":
     import asyncio
+
     asyncio.run(test())

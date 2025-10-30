@@ -1,8 +1,8 @@
 import cohere
 
 from embeddings.base_embedding import BaseEmbedding
-from settings.logger import get_logger
 from scripts import get_api_key
+from settings.logger import get_logger
 
 logger = get_logger(__name__)
 

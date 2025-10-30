@@ -1,10 +1,11 @@
 import cohere
 
 from rag.base_rag import BaseRAG
+from scripts import get_api_key
+from settings import rag_config
+
 # from embeddings.cohere_embedding import CohereEmbedding
 from settings.logger import get_logger
-from settings import rag_config
-from scripts import get_api_key
 
 logger = get_logger(__name__)
 
@@ -28,7 +29,7 @@ class CohereRAG(BaseRAG):
         system_prompt = self._generate_system_prompt(query, user_id, context)
         messages = [
             {"role": "system", "content": system_prompt},
-            {"role": "user", "content": query}
+            {"role": "user", "content": query},
         ]
         # messages.append({"role": "user", "content": query})
 
@@ -44,5 +45,5 @@ class CohereRAG(BaseRAG):
         except Exception as e:
             logger.error(f"Error getting Cohere response: {e}")
             return "I'm sorry, I couldn't process your request at the moment."
-        
+
         return response_text

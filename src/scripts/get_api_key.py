@@ -3,8 +3,8 @@ import os
 
 from dotenv import load_dotenv, set_key
 
-
 load_dotenv()
+
 
 def get_key(service: str):
     service = service.upper() + "_API"
