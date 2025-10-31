@@ -26,12 +26,14 @@ class CohereRAG(BaseRAG):
     async def get_response(self, query: str, user_id: str) -> str:
         """Get response using Cohere."""
         context = self._find_relevant_context(query)
+        # print(context)
+        # exit()
+        # return context if context else "No information found."
         system_prompt = self._generate_system_prompt(query, user_id, context)
         messages = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": query},
         ]
-        # messages.append({"role": "user", "content": query})
 
         try:
             response = await self.cohere_client.chat(
@@ -47,3 +49,40 @@ class CohereRAG(BaseRAG):
             return "I'm sorry, I couldn't process your request at the moment."
 
         return response_text
+    
+    async def get_response_with_sources(self, query: str, user_id: str) -> dict:
+        """Get response using Cohere with source citations."""
+        context, sources = self._find_relevant_context_with_sources(query)
+        
+        if not context:
+            return {
+                "response": "No information found in the database.",
+                "sources": []
+            }
+        
+        system_prompt = self._generate_system_prompt(query, user_id, context)
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": query},
+        ]
+
+        try:
+            response = await self.cohere_client.chat(
+                model=self.cohere_model,
+                messages=messages,
+                max_tokens=rag_config.MAX_OUT_TOKENS,
+                temperature=rag_config.TEMPERATURE,
+            )
+            response_text = response.message.content[0].text.strip()
+
+        except Exception as e:
+            logger.error(f"Error getting Cohere response: {e}")
+            return {
+                "response": "I'm sorry, I couldn't process your request at the moment.",
+                "sources": []
+            }
+
+        return {
+            "response": response_text,
+            "sources": sources
+        }

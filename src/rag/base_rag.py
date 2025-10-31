@@ -115,6 +115,39 @@ class BaseRAG(ABC):
             )
 
         return "\n\n".join([doc.page_content for doc in docs])
+    
+    def _find_relevant_context_with_sources(self, query: str, top_k: int = 5) -> tuple[str, list[dict]]:
+        """Find relevant context using similarity search and return sources."""
+        query_embedding = self._create_embeddings([query], is_query=True)[0]
+
+        docs = self.vectorstore.similarity_search_by_vector(
+            query_embedding, k=top_k, fetch_k=10
+        )
+        
+        sources = []
+        if self.rerank:
+            reranked_docs = self._rerank_docs(query, docs)
+            context = "\n\n".join(
+                [result.document.text for result in reranked_docs.results]
+            )
+            for idx, result in enumerate(reranked_docs.results, 1):
+                sources.append({
+                    "chunk_number": idx,
+                    "text": result.document.text,
+                    "relevance_score": result.relevance_score
+                })
+        else:
+            context = "\n\n".join([doc.page_content for doc in docs])
+            for idx, doc in enumerate(docs, 1):
+                source_info = {
+                    "chunk_number": idx,
+                    "text": doc.page_content,
+                }
+                if hasattr(doc, 'metadata') and doc.metadata:
+                    source_info.update(doc.metadata)
+                sources.append(source_info)
+        
+        return context, sources
 
     def _load_or_create_vectorstore(
         self, content_path: Path, index_path: Path = None
