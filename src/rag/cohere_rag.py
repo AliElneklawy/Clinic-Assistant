@@ -49,17 +49,14 @@ class CohereRAG(BaseRAG):
             return "I'm sorry, I couldn't process your request at the moment."
 
         return response_text
-    
+
     async def get_response_with_sources(self, query: str, user_id: str) -> dict:
         """Get response using Cohere with source citations."""
         context, sources = self._find_relevant_context_with_sources(query)
-        
+
         if not context:
-            return {
-                "response": "No information found in the database.",
-                "sources": []
-            }
-        
+            return {"response": "No information found in the database.", "sources": []}
+
         system_prompt = self._generate_system_prompt(query, user_id, context)
         messages = [
             {"role": "system", "content": system_prompt},
@@ -79,10 +76,7 @@ class CohereRAG(BaseRAG):
             logger.error(f"Error getting Cohere response: {e}")
             return {
                 "response": "I'm sorry, I couldn't process your request at the moment.",
-                "sources": []
+                "sources": [],
             }
 
-        return {
-            "response": response_text,
-            "sources": sources
-        }
+        return {"response": response_text, "sources": sources}
