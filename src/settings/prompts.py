@@ -24,6 +24,8 @@ QUERY_HANDLER_PROMPT = """
     - Use each tool ONCE per query.
     - Always cite sources in your final answer.
     - Advise users to consult a healthcare provider for medical decisions.
+    - When either web search or clinic database is used, ALWAYS include the source URLs as references at the end of your response
+      Format: "References:\n- [Website1 Name](URL1)\n- [Website2 Name](URL2)"
 """
 
 
