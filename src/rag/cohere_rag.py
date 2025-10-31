@@ -3,8 +3,6 @@ import cohere
 from rag.base_rag import BaseRAG
 from scripts import get_api_key
 from settings import rag_config
-
-# from embeddings.cohere_embedding import CohereEmbedding
 from settings.logger import get_logger
 
 logger = get_logger(__name__)
@@ -19,16 +17,12 @@ class CohereRAG(BaseRAG):
             iter(config.AVAILABLE_MODELS)
         )  # get the first model in the list
         self.in_price, self.out_price = config.AVAILABLE_MODELS[self.cohere_model]
-        # self.embedding_provider = CohereEmbedding()
 
         logger.info(f"Using Cohere's model {self.cohere_model}.")
 
     async def get_response(self, query: str, user_id: str) -> str:
         """Get response using Cohere."""
         context = self._find_relevant_context(query)
-        # print(context)
-        # exit()
-        # return context if context else "No information found."
         system_prompt = self._generate_system_prompt(query, user_id, context)
         messages = [
             {"role": "system", "content": system_prompt},
