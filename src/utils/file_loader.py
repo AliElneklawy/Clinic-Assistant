@@ -1,17 +1,16 @@
 from pathlib import Path
-from typing import Optional, Dict, Callable
+from typing import Callable, Dict, Optional
 
 from langchain_community.document_loaders import (
-    TextLoader,
-    PyMuPDFLoader,
     Docx2txtLoader,
+    PyMuPDFLoader,
+    TextLoader,
     UnstructuredCSVLoader,
     UnstructuredExcelLoader,
     UnstructuredPowerPointLoader,
 )
 
 from settings.logger import get_logger
-
 
 logger = get_logger(__name__)
 

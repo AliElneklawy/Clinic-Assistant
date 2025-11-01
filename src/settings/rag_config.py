@@ -18,7 +18,7 @@ MAX_OUT_TOKENS: int = 1500
 #         )
 
 
-class CohereConfig():
+class CohereConfig:
     AVAILABLE_MODELS = {
         "command-r-08-2024": [0.30, 1.20],
         "command-r-plus-04-2024": [3.00, 15.00],
