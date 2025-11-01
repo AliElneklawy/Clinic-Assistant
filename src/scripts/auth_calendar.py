@@ -29,3 +29,5 @@ def authenticate_calendar():
             creds = flow.run_local_server(port=0)
         with Path("token.json").open("w") as token:
             token.write(creds.to_json())
+
+    return creds

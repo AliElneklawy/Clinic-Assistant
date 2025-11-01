@@ -10,7 +10,8 @@ from agents.base_agent import BaseAgent
 from agents.tools import AgentTools
 from rag.cohere_rag import CohereRAG
 from scripts import get_api_key
-from scripts.auth_calendar import authenticate_calendar
+
+# from scripts.auth_calendar import authenticate_calendar
 from settings import agent_config, prompts
 from settings.logger import get_logger
 
@@ -32,8 +33,8 @@ class QueryHandlerAgent(BaseAgent):
             cohere_api_key=get_api_key.get_key("COHERE"),
         )
 
-        logger.info("Authenticating google calendar API...")
-        authenticate_calendar()
+        # logger.info("Authenticating google calendar API...")
+        # creds = authenticate_calendar()
 
         logger.info("Initializing RAG system...")
         self.rag = CohereRAG(
@@ -68,7 +69,7 @@ class QueryHandlerAgent(BaseAgent):
         self.tools = [
             Tool(
                 name="search_clinic_database",
-                func=self.agent_tools._search_clinic_database,
+                func=self.agent_tools.search_clinic_database,
                 description=(
                     "Search the clinic's knowledge base. Automatically triggers web search if "
                     f"relevance score is below {agent_config.RELEVANCE_THRESHOLD}. Use this for all medical queries. "
@@ -77,21 +78,21 @@ class QueryHandlerAgent(BaseAgent):
             ),
             Tool(
                 name="search_web",
-                func=self.agent_tools._search_web,
+                func=self.agent_tools.search_web,
                 description=(
                     "Search the web for current medical information. Only use if you need "
                     "additional recent/specific information not covered by the database search."
                 ),
             ),
-            # Tool(
-            #     name="list_available_slots",
-            #     func=...,
-            #     description=(
-            #         "List all available appointments from goolge calendar. ",
-            #         "Use this to find the next available appointment times starting today ",
-            #         "and excluding Saturday and Friday."
-            #     )
-            # ),
+            Tool(
+                name="list_available_slots",
+                func=self.agent_tools.list_available_slots,
+                description=(
+                    "List all available appointments from goolge calendar. "
+                    "Use this to find the next available appointment times starting today. "
+                    "If a specific day is NOT shown in the output, it means the doctor is NOT available on that day."
+                ),
+            ),
             # Tool(
             #     name="book_appointment",
             #     func=...,
