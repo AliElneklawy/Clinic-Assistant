@@ -90,6 +90,23 @@ class QueryHandlerAgent(BaseAgent):
                     "additional recent/specific information not covered by the database search."
                 ),
             ),
+            Tool(
+                name="list_available_slots",
+                func=...,
+                description=(
+                    "List all available appointments from goolge calendar. ",
+                    "Use this to find the next available appointment times starting today ",
+                    "and excluding Saturday and Friday."
+                )
+            ),
+            Tool(
+                name="book_appointment",
+                func=...,
+                description=(
+                    "Book an appointment from google calendar. "
+                    "Use this to book an appointment for a specific time."
+                )
+            )
         ]
 
     def _init_agent(self):
