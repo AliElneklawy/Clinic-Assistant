@@ -11,17 +11,15 @@ from agents.base_agent import BaseAgent
 from agents.tools import AgentTools
 from rag.cohere_rag import CohereRAG
 from scripts import get_api_key
-from settings import agent_config
-from settings import prompts
+from scripts.auth_calendar import authenticate_calendar
+from settings import agent_config, prompts
 from settings.logger import get_logger
 
 logger = get_logger(__name__)
 
 
 class QueryHandlerAgent(BaseAgent):
-    def __init__(
-        self, content_path, index_path, rerank: bool = True
-    ):
+    def __init__(self, content_path, index_path, rerank: bool = True):
         """
         Initialize the QueryHandlerAgent with RAG system and LLM.
 
@@ -41,6 +39,9 @@ class QueryHandlerAgent(BaseAgent):
             include_answer=True,
             include_raw_content=False,
         )
+
+        logger.info("Authenticating google calendar API...")
+        authenticate_calendar()
 
         logger.info("Initializing RAG system...")
         self.rag = CohereRAG(
@@ -90,23 +91,23 @@ class QueryHandlerAgent(BaseAgent):
                     "additional recent/specific information not covered by the database search."
                 ),
             ),
-            Tool(
-                name="list_available_slots",
-                func=...,
-                description=(
-                    "List all available appointments from goolge calendar. ",
-                    "Use this to find the next available appointment times starting today ",
-                    "and excluding Saturday and Friday."
-                )
-            ),
-            Tool(
-                name="book_appointment",
-                func=...,
-                description=(
-                    "Book an appointment from google calendar. "
-                    "Use this to book an appointment for a specific time."
-                )
-            )
+            # Tool(
+            #     name="list_available_slots",
+            #     func=...,
+            #     description=(
+            #         "List all available appointments from goolge calendar. ",
+            #         "Use this to find the next available appointment times starting today ",
+            #         "and excluding Saturday and Friday."
+            #     )
+            # ),
+            # Tool(
+            #     name="book_appointment",
+            #     func=...,
+            #     description=(
+            #         "Book an appointment from google calendar. "
+            #         "Use this to book an appointment for a specific time."
+            #     )
+            # )
         ]
 
     def _init_agent(self):
