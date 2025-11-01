@@ -5,15 +5,24 @@ from functools import lru_cache
 from langchain_tavily import TavilySearch
 
 from rag.cohere_rag import CohereRAG
+from scripts import get_api_key
+from settings import agent_config
 from settings.logger import get_logger
 
 logger = get_logger(__name__)
 
 
 class AgentTools:
-    def __init__(self, rag: CohereRAG, tavily_search: TavilySearch):
+    def __init__(self, rag: CohereRAG):
         self.rag = rag
-        self.tavily_search = tavily_search
+
+        self.tavily_search = TavilySearch(
+            tavily_api_key=get_api_key.get_key("TAVILY_SEARCH"),
+            max_results=agent_config.MAX_SEARCH_RESULTS,
+            search_depth="advanced",
+            include_answer=True,
+            include_raw_content=False,
+        )
 
     def _check_relevance_and_search(self, query: str) -> str:
         """

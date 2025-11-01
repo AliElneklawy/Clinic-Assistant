@@ -5,7 +5,6 @@ from langchain.agents import (
 from langchain.tools import Tool
 from langchain_cohere import ChatCohere
 from langchain_core.prompts import PromptTemplate
-from langchain_tavily import TavilySearch
 
 from agents.base_agent import BaseAgent
 from agents.tools import AgentTools
@@ -32,13 +31,6 @@ class QueryHandlerAgent(BaseAgent):
         self.llm = ChatCohere(
             cohere_api_key=get_api_key.get_key("COHERE"),
         )
-        self.tavily_search = TavilySearch(
-            tavily_api_key=get_api_key.get_key("TAVILY_SEARCH"),
-            max_results=agent_config.MAX_SEARCH_RESULTS,
-            search_depth="advanced",
-            include_answer=True,
-            include_raw_content=False,
-        )
 
         logger.info("Authenticating google calendar API...")
         authenticate_calendar()
@@ -49,7 +41,7 @@ class QueryHandlerAgent(BaseAgent):
         )
 
         logger.info("Initializing tools...")
-        self.agent_tools = AgentTools(rag=self.rag, tavily_search=self.tavily_search)
+        self.agent_tools = AgentTools(rag=self.rag)
 
         super().__init__()
 
