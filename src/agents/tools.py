@@ -1,13 +1,15 @@
 import asyncio
 import datetime
+import json
 import uuid
 from functools import lru_cache
-from typing import List, Tuple
-
+from typing import List, Optional, Tuple
+from urllib.parse import urlencode, quote_plus
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from langchain_tavily import TavilySearch
 
+from models.appointment import parse_to_model
 from rag.cohere_rag import CohereRAG
 from scripts import get_api_key
 from scripts.auth_calendar import authenticate_calendar
@@ -30,7 +32,6 @@ class AgentTools:
         )
 
         logger.info("Authenticating google calendar API...")
-        # creds = authenticate_calendar()
         self.service = build("calendar", "v3", credentials=authenticate_calendar())
 
     def _check_relevance_and_search(self, query: str) -> str:
@@ -276,3 +277,229 @@ class AgentTools:
                 slots[current_date.strftime("%A, %B %d, %Y")] = available
 
         return slots
+
+    def _create_event(
+        self,
+        patient_name: str,
+        patient_age: str,
+        patient_email: str,
+        description: str,
+        start_datetime: datetime.datetime,
+        end_datetime: datetime.datetime,
+    ):
+        event = {
+            "summary": f"Appointment: {patient_name}, {patient_age} years old",
+            "description": description,
+            "start": {
+                "dateTime": start_datetime.isoformat(),
+                "timeZone": clinic_config.CLINIC_TIMEZONE,
+            },
+            "end": {
+                "dateTime": end_datetime.isoformat(),
+                "timeZone": clinic_config.CLINIC_TIMEZONE,
+            },
+            "reminders": {
+                "useDefault": False,
+                "overrides": [
+                    {"method": "email", "minutes": 24 * 60},  # 1 day before
+                    {"method": "popup", "minutes": 60},  # 1 hour before
+                ],
+            },
+        }
+
+        if patient_email:
+            event["attendees"] = [
+                {"email": patient_email, "responseStatus": "needsAction"}
+            ]
+
+        return event
+
+    def _unpack_data(self, data: str):
+        data = parse_to_model(data.rstrip("O"))
+        (
+            appointment_date,
+            appointment_time,
+            patient_name,
+            patient_age,
+            description,
+            patient_email,
+        ) = (
+            data.date_str,
+            data.time_str,
+            data.patient_name,
+            data.patient_age,
+            data.description,
+            data.patient_email,
+        )
+        return (
+            appointment_date,
+            appointment_time,
+            patient_name,
+            patient_age,
+            description,
+            patient_email,
+        )
+
+    def book_appointment(
+        self,
+        data: str,
+    ) -> str:
+        """
+        ### THE FUNCTION NOW WORKS BUT NEEDS CLEANING UP ###
+        
+        Book an appointment on Google Calendar.
+
+        Args:
+            data: String containing appointment data in the following format:
+            date_str='November 03, 2025', time_str='01:40 PM', patient_name=None, patient_age=None, description=None, patient_email=None
+
+        Returns:
+            Confirmation message with appointment details
+        """
+        (
+            appointment_date,
+            appointment_time,
+            patient_name,
+            patient_age,
+            description,
+            patient_email,
+        ) = self._unpack_data(data)
+        try:
+            # Verify the slot is still available
+            start_datetime = datetime.datetime.combine(
+                appointment_date, appointment_time
+            )
+            end_datetime = start_datetime + datetime.timedelta(
+                minutes=clinic_config.SLOT_DURATION_MINUTES
+            )
+
+            # Get existing events to check availability
+            time_min = (
+                datetime.datetime.combine(
+                    appointment_date, datetime.time(0, 0)
+                ).isoformat()
+                + "Z"
+            )
+            time_max = (
+                datetime.datetime.combine(
+                    appointment_date, datetime.time(23, 59)
+                ).isoformat()
+                + "Z"
+            )
+
+            events_result = (
+                self.service.events()
+                .list(
+                    calendarId=clinic_config.CALENDAR_ID,
+                    timeMin=time_min,
+                    timeMax=time_max,
+                    singleEvents=True,
+                    orderBy="startTime",
+                )
+                .execute()
+            )
+
+            existing_events = events_result.get("items", [])
+
+            # Check if slot is available
+            if not self._is_slot_available(
+                start_datetime, end_datetime, existing_events
+            ):
+                return json.dumps(
+                    {
+                        "success": False,
+                        "message": f"The time slot at {appointment_time.strftime('%I:%M %p')} on {appointment_date.strftime('%B %d, %Y')} is no longer available. Please choose another time.",
+                    }
+                )
+
+            # Create the event
+            event = self._create_event(
+                patient_name,
+                patient_age,
+                patient_email,
+                description,
+                start_datetime,
+                end_datetime,
+            )
+
+            created_event = (
+                self.service.events()
+                .insert(
+                    calendarId=clinic_config.CALENDAR_ID,
+                    body=event,
+                    sendUpdates="all" if patient_email else "none",
+                )
+                .execute()
+            )
+
+            add_to_calendar_link = self._make_add_to_calendar_link(
+                title=f"Appointment: {patient_name}",
+                start_datetime=start_datetime,
+                end_datetime=end_datetime,
+                details=description,
+                patient_email=patient_email,
+            )
+
+            result = {
+                "success": True,
+                "event_id": created_event["id"],
+                "patient_name": patient_name,
+                "date": appointment_date.strftime("%A, %B %d, %Y"),
+                "time": f"{start_datetime.strftime('%I:%M %p')} - {end_datetime.strftime('%I:%M %p')}",
+                "description": description,
+                "calendar_link": created_event.get("htmlLink"),  # internal clinic link
+                "add_to_calendar_link": add_to_calendar_link,    # user-friendly link
+                "message": (
+                    f"Appointment booked successfully for {patient_name or 'Patient'} on "
+                    f"{appointment_date.strftime('%B %d, %Y')} at {appointment_time.strftime('%I:%M %p')}. "
+                    f"Event ID: {created_event['id']}"
+                ),
+            }
+
+            logger.info(f"Appointment booked: {result}")
+            return json.dumps(result)
+
+        except HttpError as e:
+            error_msg = f"Google Calendar API error: {str(e)}"
+            logger.error(error_msg)
+            return json.dumps({"success": False, "message": error_msg})
+        except Exception as e:
+            error_msg = f"Error booking appointment: {str(e)}"
+            logger.error(error_msg)
+            return json.dumps({"success": False, "message": error_msg})
+
+    
+
+    def _make_add_to_calendar_link(
+        self,
+        title: str,
+        start_datetime: datetime.datetime,
+        end_datetime: datetime.datetime,
+        details: str,
+        patient_email: str = ""
+    ) -> str:
+        params = {
+            "action": "TEMPLATE",
+            "text": title,
+            "dates": f"{start_datetime.strftime('%Y%m%dT%H%M00')}/{end_datetime.strftime('%Y%m%dT%H%M00')}",
+            "details": details,
+        }
+        if patient_email:
+            params["add"] = patient_email
+
+        return "https://calendar.google.com/calendar/render?" + urlencode(params, quote_via=quote_plus)
+
+
+    def cancel_appointment(self, event_id: str) -> str:
+        """
+        Cancel an appointment from google calendar.
+        Use this to cancel an appointment for a specific time.
+        """
+        pass
+
+    def reschedule_appointment(self, event_id: str) -> str:
+        """
+        Reschedule an appointment from google calendar.
+        Use this to reschedule an appointment for a specific time.
+        """
+        pass

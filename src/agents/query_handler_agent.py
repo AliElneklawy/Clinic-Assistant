@@ -1,17 +1,23 @@
 from langchain.agents import (
     AgentExecutor,
+    create_openai_tools_agent,
     create_react_agent,
 )
-from langchain.tools import Tool
+from langchain.memory import ChatMessageHistory
+from langchain.tools import StructuredTool, Tool
 from langchain_cohere import ChatCohere
-from langchain_core.prompts import PromptTemplate
+from langchain_core.prompts import (
+    ChatPromptTemplate,
+    MessagesPlaceholder,
+    PromptTemplate,
+)
+from langchain_core.runnables.history import RunnableWithMessageHistory
 
 from agents.base_agent import BaseAgent
 from agents.tools import AgentTools
+from models.appointment import BookAppointmentInput
 from rag.cohere_rag import CohereRAG
 from scripts import get_api_key
-
-# from scripts.auth_calendar import authenticate_calendar
 from settings import agent_config, prompts
 from settings.logger import get_logger
 
@@ -33,9 +39,6 @@ class QueryHandlerAgent(BaseAgent):
             cohere_api_key=get_api_key.get_key("COHERE"),
         )
 
-        # logger.info("Authenticating google calendar API...")
-        # creds = authenticate_calendar()
-
         logger.info("Initializing RAG system...")
         self.rag = CohereRAG(
             content_path=content_path, index_path=index_path, rerank=rerank
@@ -56,6 +59,11 @@ class QueryHandlerAgent(BaseAgent):
             },
         )
 
+        # prompt = ChatPromptTemplate.from_messages([
+        #     ("system", prompts.QUERY_HANDLER_PROMPT),
+        #     ("human", "{input}"),
+        #     MessagesPlaceholder(variable_name="agent_scratchpad"),
+        # ])
         return prompt
 
     def _init_tools(self):
@@ -93,14 +101,16 @@ class QueryHandlerAgent(BaseAgent):
                     "If a specific day is NOT shown in the output, it means the doctor is NOT available on that day."
                 ),
             ),
-            # Tool(
-            #     name="book_appointment",
-            #     func=...,
-            #     description=(
-            #         "Book an appointment from google calendar. "
-            #         "Use this to book an appointment for a specific time."
-            #     )
-            # )
+            Tool(
+                func=self.agent_tools.book_appointment,
+                name="book_appointment",
+                description=(
+                    "Book an appointment on Google Calendar. "
+                    "Make sure that the appointment is available before booking by calling list_available_slots first."
+                    "Pass the data in the follownig example string format: \n"
+                    "date_str='November 03, 2025', time_str='01:40 PM', patient_name=None, patient_age=None, description=None, patient_email=None"
+                ),
+            ),
         ]
 
     def _init_agent(self):
