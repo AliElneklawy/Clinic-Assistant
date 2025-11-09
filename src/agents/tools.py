@@ -335,8 +335,6 @@ class AgentTools:
 
     def book_appointment(self, data: str) -> str:
         """
-        ### THE FUNCTION NOW WORKS BUT NEEDS CLEANING UP ###
-
         Book an appointment on Google Calendar.
 
         Args:
@@ -395,12 +393,7 @@ class AgentTools:
             if not self._is_slot_available(
                 start_datetime, end_datetime, existing_events
             ):
-                return json.dumps(
-                    {
-                        "success": False,
-                        "message": f"The time slot at {appointment_time.strftime('%I:%M %p')} on {appointment_date.strftime('%B %d, %Y')} is no longer available. Please choose another time.",
-                    }
-                )
+                return f"The time slot at {appointment_time.strftime('%I:%M %p')} on {appointment_date.strftime('%B %d, %Y')} is no longer available. Please choose another time."
 
             # Create the event
             event = self._create_event(
@@ -430,33 +423,24 @@ class AgentTools:
                 patient_email=patient_email,
             )
 
-            result = {
-                "success": True,
-                "event_id": created_event["id"],
-                "patient_name": patient_name,
-                "date": appointment_date.strftime("%A, %B %d, %Y"),
-                "time": f"{start_datetime.strftime('%I:%M %p')} - {end_datetime.strftime('%I:%M %p')}",
-                "description": description,
-                "calendar_link": created_event.get("htmlLink"),  # internal clinic link
-                "add_to_calendar_link": add_to_calendar_link,  # user-friendly link
-                "message": (
-                    f"Appointment booked successfully for {patient_name or 'Patient'} on "
-                    f"{appointment_date.strftime('%B %d, %Y')} at {appointment_time.strftime('%I:%M %p')}. "
-                    f"Event ID: {created_event['id']}"
-                ),
-            }
+            result = (
+                f"Appointment booked successfully for {patient_name or 'Patient'} on "
+                f"{appointment_date.strftime('%B %d, %Y')} at {appointment_time.strftime('%I:%M %p')}. "
+                f"Event ID: {created_event['id']}. Use this ID to cancel or reschedule the appointment. "
+                f"Use this link to add the event to your calendar: {add_to_calendar_link}"
+            )
 
             logger.info(f"Appointment booked: {result}")
-            return json.dumps(result)
+            return result
 
         except HttpError as e:
             error_msg = f"Google Calendar API error: {str(e)}"
             logger.error(error_msg)
-            return json.dumps({"success": False, "message": error_msg})
+            return error_msg
         except Exception as e:
             error_msg = f"Error booking appointment: {str(e)}"
             logger.error(error_msg)
-            return json.dumps({"success": False, "message": error_msg})
+            return error_msg
 
     def _make_add_to_calendar_link(
         self,
