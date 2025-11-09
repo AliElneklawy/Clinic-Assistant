@@ -1,27 +1,30 @@
 from langchain.agents import (
     AgentExecutor,
+    create_openai_tools_agent,
     create_react_agent,
 )
+from langchain_community.chat_message_histories import SQLChatMessageHistory
 from langchain.tools import Tool
 from langchain_cohere import ChatCohere
-from langchain_core.prompts import PromptTemplate
-from langchain_tavily import TavilySearch
+from langchain_core.prompts import (
+    ChatPromptTemplate,
+    MessagesPlaceholder,
+    PromptTemplate,
+)
+from langchain_core.runnables.history import RunnableWithMessageHistory
 
 from agents.base_agent import BaseAgent
 from agents.tools import AgentTools
-from rag.cohere_rag import CohereRAG
+from rag.rag_system import RAGSystem
 from scripts import get_api_key
-from settings import agent_config
-from settings import prompts
+from settings import agent_config, prompts
 from settings.logger import get_logger
 
 logger = get_logger(__name__)
 
 
 class QueryHandlerAgent(BaseAgent):
-    def __init__(
-        self, content_path, index_path, rerank: bool = True
-    ):
+    def __init__(self, content_path, index_path, rerank: bool = True):
         """
         Initialize the QueryHandlerAgent with RAG system and LLM.
 
@@ -31,24 +34,20 @@ class QueryHandlerAgent(BaseAgent):
             rerank: Whether to enable reranking in the RAG system (default: True)
             max_search_results: Maximum number of search results to retrieve (default: 3)
         """
+        logger.info("Initializing LLM...")
         self.llm = ChatCohere(
             cohere_api_key=get_api_key.get_key("COHERE"),
         )
-        self.tavily_search = TavilySearch(
-            tavily_api_key=get_api_key.get_key("TAVILY_SEARCH"),
-            max_results=agent_config.MAX_SEARCH_RESULTS,
-            search_depth="advanced",
-            include_answer=True,
-            include_raw_content=False,
-        )
 
         logger.info("Initializing RAG system...")
-        self.rag = CohereRAG(
-            content_path=content_path, index_path=index_path, rerank=rerank
+        self.rag = RAGSystem(
+            content_path=content_path,
+            index_path=index_path,
+            rerank=rerank,
         )
 
         logger.info("Initializing tools...")
-        self.agent_tools = AgentTools(rag=self.rag, tavily_search=self.tavily_search)
+        self.agent_tools = AgentTools(rag=self.rag)
 
         super().__init__()
 
@@ -62,6 +61,11 @@ class QueryHandlerAgent(BaseAgent):
             },
         )
 
+        # prompt = ChatPromptTemplate.from_messages([
+        #     ("system", prompts.QUERY_HANDLER_PROMPT),
+        #     ("human", "{input}"),
+        #     MessagesPlaceholder(variable_name="agent_scratchpad"),
+        # ])
         return prompt
 
     def _init_tools(self):
@@ -75,7 +79,7 @@ class QueryHandlerAgent(BaseAgent):
         self.tools = [
             Tool(
                 name="search_clinic_database",
-                func=self.agent_tools._search_clinic_database,
+                func=self.agent_tools.search_clinic_database,
                 description=(
                     "Search the clinic's knowledge base. Automatically triggers web search if "
                     f"relevance score is below {agent_config.RELEVANCE_THRESHOLD}. Use this for all medical queries. "
@@ -84,10 +88,29 @@ class QueryHandlerAgent(BaseAgent):
             ),
             Tool(
                 name="search_web",
-                func=self.agent_tools._search_web,
+                func=self.agent_tools.search_web,
                 description=(
                     "Search the web for current medical information. Only use if you need "
                     "additional recent/specific information not covered by the database search."
+                ),
+            ),
+            Tool(
+                name="list_available_slots",
+                func=self.agent_tools.list_available_slots,
+                description=(
+                    "List all available appointments from goolge calendar. "
+                    "Use this to find the next available appointment times starting today. "
+                    "If a specific day is NOT shown in the output, it means the doctor is NOT available on that day."
+                ),
+            ),
+            Tool(
+                func=self.agent_tools.book_appointment,
+                name="book_appointment",
+                description=(
+                    "Book an appointment on Google Calendar. "
+                    "Make sure that the appointment is available before booking by calling list_available_slots first."
+                    "Pass the data in the follownig example string format: \n"
+                    "date_str='November 03, 2025', time_str='01:40 PM', patient_name=None, patient_age=None, description=None, patient_email=None"
                 ),
             ),
         ]

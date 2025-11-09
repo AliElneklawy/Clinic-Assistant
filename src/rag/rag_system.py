@@ -2,7 +2,6 @@ import hashlib
 import re
 import shutil
 import time
-from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import List, Optional
 
@@ -13,14 +12,19 @@ from langchain_community.vectorstores import FAISS
 
 from embeddings.cohere_embedding import CohereEmbedding
 from scripts import get_api_key, write_to_file
-from settings import prompts
 from settings.logger import get_logger
 from settings.rag_config import *
 
 logger = get_logger(__name__)
 
 
-class BaseRAG(ABC):
+class RAGSystem:
+    """
+    RAG (Retrieval-based Assistant for General Knowledge) system that retrieves
+    relevant context from a corpus of text documents using a vector store and
+    similarity search. Optionally, reranks the retrieved documents using a
+    language model.
+    """
     def __init__(
         self,
         content_path: Path,
@@ -34,8 +38,6 @@ class BaseRAG(ABC):
 
         logger.info(f"Initializing RAG system. Model temperature {TEMPERATURE}...")
 
-        self._initialize_models()
-
         if self.rerank:
             logger.info("Using Cohere's re-ranking model...")
             self.reranker = cohere.Client(get_api_key.get_key("COHERE"))
@@ -47,10 +49,6 @@ class BaseRAG(ABC):
             )
             self.current_index_path = self._get_index_path(content_path)
 
-    @abstractmethod
-    def _initialize_models(self):
-        pass
-
     def _create_embeddings(self, texts: list, is_query: bool = False) -> list:
         return self.embedder.embed(texts, is_query)
 
@@ -61,30 +59,6 @@ class BaseRAG(ABC):
             16,
         )[0][:15]
         return str(Path(self.index_path) / f"index_{content_hash}.faiss")
-
-    def _generate_system_prompt(
-        self,
-        query: str,
-        user_id: str,
-        context: str,
-        include_query: bool = True,
-        include_context: bool = True,
-        include_prev_conv: bool = True,
-    ) -> str:
-        """Generate a standardized system prompt for all LLMs."""
-        system_prompt = prompts.SYS_MSG
-
-        if include_context and context:
-            system_prompt += f"\n\n### Context: \n{context}"
-
-        # if include_prev_conv:
-        #     previous_conversation = self.db.get_chat_history(user_id)
-        #     system_prompt += f"\n\n### Previous conversation:\n{previous_conversation}"
-
-        if include_query and query:
-            system_prompt += f"\n\n### Current question: {query}"
-
-        return system_prompt.strip()
 
     def _rerank_docs(self, query: str, docs):
         """
@@ -101,25 +75,9 @@ class BaseRAG(ABC):
         )
         return reranked
 
-    def _find_relevant_context(self, query: str, top_k: int = 5) -> str:
-        """Find relevant context using similarity search."""
-        query_embedding = self._create_embeddings([query], is_query=True)[0]
-
-        docs = self.vectorstore.similarity_search_by_vector(
-            query_embedding, k=top_k, fetch_k=20
-        )
-        if self.rerank:
-            reranked_docs = self._rerank_docs(query, docs)
-            return "\n\n".join(
-                [result.document.text for result in reranked_docs.results]
-            )
-
-        return "\n\n".join([doc.page_content for doc in docs])
-
-    def _find_relevant_context_with_sources(
+    def find_relevant_context_with_sources(
         self, query: str, top_k: int = 5
-    ) -> tuple[str, list[dict]]:
-        """Find relevant context using similarity search and return sources."""
+    ) -> dict:
         query_embedding = self._create_embeddings([query], is_query=True)[0]
 
         docs = self.vectorstore.similarity_search_by_vector(
@@ -151,7 +109,7 @@ class BaseRAG(ABC):
                     source_info.update(doc.metadata)
                 sources.append(source_info)
 
-        return context, sources
+        return {"context": context, "sources": sources}
 
     def _load_or_create_vectorstore(
         self, content_path: Path, index_path: Path = None

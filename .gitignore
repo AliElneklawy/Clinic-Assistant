@@ -11,5 +11,10 @@ wheels/
 # Virtual environments
 .venv
 
+# Credentials
+creds.json
+token.json
 .env
+
+# Logs
 logs/
