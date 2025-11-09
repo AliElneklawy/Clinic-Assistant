@@ -3,14 +3,15 @@ import datetime
 import json
 import uuid
 from functools import lru_cache
-from typing import List, Optional, Tuple
-from urllib.parse import urlencode, quote_plus
+from typing import List, Tuple
+from urllib.parse import quote_plus, urlencode
+
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from langchain_tavily import TavilySearch
 
 from models.appointment import parse_to_model
-from rag.cohere_rag import CohereRAG
+from rag.rag_system import RAGSystem
 from scripts import get_api_key
 from scripts.auth_calendar import authenticate_calendar
 from settings import agent_config, clinic_config
@@ -20,7 +21,7 @@ logger = get_logger(__name__)
 
 
 class AgentTools:
-    def __init__(self, rag: CohereRAG):
+    def __init__(self, rag: RAGSystem):
         self.rag = rag
 
         self.tavily_search = TavilySearch(
@@ -46,7 +47,9 @@ class AgentTools:
         max_relevance = db_result.get("max_relevance_score", 1.0)
         has_scores = db_result.get("has_relevance_scores", False)
 
-        needs_web_search = has_scores and max_relevance < 0.6
+        needs_web_search = (
+            has_scores and max_relevance < agent_config.RELEVANCE_THRESHOLD
+        )
 
         if needs_web_search:
             logger.info(
@@ -65,18 +68,7 @@ class AgentTools:
 
     def _search_clinic_database_internal(self, query: str) -> dict:
         """Internal method to search database and return structured data."""
-        try:
-            loop = asyncio.get_event_loop()
-            if loop.is_closed():
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-        except RuntimeError:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-
-        result = loop.run_until_complete(
-            self.rag.get_response_with_sources(query=query, user_id=uuid.uuid4())
-        )
+        result = self.rag.find_relevant_context_with_sources(query=query)
 
         sources = result.get("sources", [])
         max_relevance_score = 0.0
@@ -123,7 +115,7 @@ class AgentTools:
         try:
             logger.info(f"Searching clinic database for: {query}")
             result = self._check_relevance_and_search(query)
-            logger.info("Successfully retrieved response from clinic database")
+            # logger.info("Successfully retrieved response from clinic database")
             return result
         except Exception as e:
             logger.error(f"Error searching clinic database: {e}")
@@ -316,6 +308,7 @@ class AgentTools:
 
     def _unpack_data(self, data: str):
         data = parse_to_model(data.rstrip("O"))
+
         (
             appointment_date,
             appointment_time,
@@ -340,13 +333,10 @@ class AgentTools:
             patient_email,
         )
 
-    def book_appointment(
-        self,
-        data: str,
-    ) -> str:
+    def book_appointment(self, data: str) -> str:
         """
         ### THE FUNCTION NOW WORKS BUT NEEDS CLEANING UP ###
-        
+
         Book an appointment on Google Calendar.
 
         Args:
@@ -354,7 +344,7 @@ class AgentTools:
             date_str='November 03, 2025', time_str='01:40 PM', patient_name=None, patient_age=None, description=None, patient_email=None
 
         Returns:
-            Confirmation message with appointment details
+            Confirmation message containing the event ID and a link to the event in Google Calendar.
         """
         (
             appointment_date,
@@ -448,7 +438,7 @@ class AgentTools:
                 "time": f"{start_datetime.strftime('%I:%M %p')} - {end_datetime.strftime('%I:%M %p')}",
                 "description": description,
                 "calendar_link": created_event.get("htmlLink"),  # internal clinic link
-                "add_to_calendar_link": add_to_calendar_link,    # user-friendly link
+                "add_to_calendar_link": add_to_calendar_link,  # user-friendly link
                 "message": (
                     f"Appointment booked successfully for {patient_name or 'Patient'} on "
                     f"{appointment_date.strftime('%B %d, %Y')} at {appointment_time.strftime('%I:%M %p')}. "
@@ -468,15 +458,13 @@ class AgentTools:
             logger.error(error_msg)
             return json.dumps({"success": False, "message": error_msg})
 
-    
-
     def _make_add_to_calendar_link(
         self,
         title: str,
         start_datetime: datetime.datetime,
         end_datetime: datetime.datetime,
         details: str,
-        patient_email: str = ""
+        patient_email: str = "",
     ) -> str:
         params = {
             "action": "TEMPLATE",
@@ -487,8 +475,9 @@ class AgentTools:
         if patient_email:
             params["add"] = patient_email
 
-        return "https://calendar.google.com/calendar/render?" + urlencode(params, quote_via=quote_plus)
-
+        return "https://calendar.google.com/calendar/render?" + urlencode(
+            params, quote_via=quote_plus
+        )
 
     def cancel_appointment(self, event_id: str) -> str:
         """

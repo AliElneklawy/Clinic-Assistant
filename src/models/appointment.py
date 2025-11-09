@@ -54,6 +54,10 @@ class BookAppointmentInput(BaseModel):
 
 
 def parse_to_model(arg_str: str) -> BookAppointmentInput:
+    """
+    Parse the output of the LLM into a BookAppointmentInput model
+    to be properly handled by the book_appointment tool.
+    """
     # Turn "a=1, b='x'" → "{'a':1, 'b':'x'}"
     cleaned = re.sub(r"(\w+)\s*=", r"'\1':", arg_str)
     cleaned = "{" + cleaned + "}"

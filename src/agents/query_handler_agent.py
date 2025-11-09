@@ -3,8 +3,8 @@ from langchain.agents import (
     create_openai_tools_agent,
     create_react_agent,
 )
-from langchain.memory import ChatMessageHistory
-from langchain.tools import StructuredTool, Tool
+from langchain_community.chat_message_histories import SQLChatMessageHistory
+from langchain.tools import Tool
 from langchain_cohere import ChatCohere
 from langchain_core.prompts import (
     ChatPromptTemplate,
@@ -15,8 +15,7 @@ from langchain_core.runnables.history import RunnableWithMessageHistory
 
 from agents.base_agent import BaseAgent
 from agents.tools import AgentTools
-from models.appointment import BookAppointmentInput
-from rag.cohere_rag import CohereRAG
+from rag.rag_system import RAGSystem
 from scripts import get_api_key
 from settings import agent_config, prompts
 from settings.logger import get_logger
@@ -35,13 +34,16 @@ class QueryHandlerAgent(BaseAgent):
             rerank: Whether to enable reranking in the RAG system (default: True)
             max_search_results: Maximum number of search results to retrieve (default: 3)
         """
+        logger.info("Initializing LLM...")
         self.llm = ChatCohere(
             cohere_api_key=get_api_key.get_key("COHERE"),
         )
 
         logger.info("Initializing RAG system...")
-        self.rag = CohereRAG(
-            content_path=content_path, index_path=index_path, rerank=rerank
+        self.rag = RAGSystem(
+            content_path=content_path,
+            index_path=index_path,
+            rerank=rerank,
         )
 
         logger.info("Initializing tools...")
