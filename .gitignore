@@ -18,3 +18,4 @@ token.json
 
 # Logs
 logs/
+data/database/chat_history.db
