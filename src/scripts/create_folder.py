@@ -15,4 +15,4 @@ def create(path: str):
     else:
         if not p.exists():
             p.mkdir(exist_ok=True, parents=True)
-        return p
+    return p

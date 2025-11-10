@@ -466,13 +466,24 @@ class AgentTools:
     def cancel_appointment(self, event_id: str) -> str:
         """
         Cancel an appointment from google calendar.
-        Use this to cancel an appointment for a specific time.
         """
-        pass
+        event_id = event_id.strip("O")
+        try:
+            self.service.events().delete(
+                calendarId=clinic_config.CALENDAR_ID, eventId=event_id
+            ).execute()
+            return f"Appointment cancelled successfully for event ID: {event_id}"
+        except HttpError as e:
+            error_msg = f"Google Calendar API error: {str(e)}"
+            logger.error(error_msg)
+            return error_msg
+        except Exception as e:
+            error_msg = f"Error cancelling appointment: {str(e)}"
+            logger.error(error_msg)
+            return error_msg
 
     def reschedule_appointment(self, event_id: str) -> str:
         """
         Reschedule an appointment from google calendar.
-        Use this to reschedule an appointment for a specific time.
         """
         pass

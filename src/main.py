@@ -1,8 +1,10 @@
+from uuid import uuid4
+
 from agents.query_handler_agent import QueryHandlerAgent
 from settings.paths import INDEXES_DIR, MED_DATA_FILE
 
 
-def run_agent(agent):
+def run_agent(agent, user_id):
     while True:
         query = input("User: ").strip()
         if not query:
@@ -11,7 +13,7 @@ def run_agent(agent):
             break
 
         try:
-            response = agent.run(query)
+            response = agent.run(query, user_id)
             print("Assistant:", response["output"])
         except Exception as e:
             print(f"Error: {e}")
@@ -23,7 +25,7 @@ def main():
         index_path=INDEXES_DIR / "index_7ad274e90429ac4.faiss.temp",
     )
 
-    run_agent(agent)
+    run_agent(agent, str(uuid4()))
 
 
 if __name__ == "__main__":
