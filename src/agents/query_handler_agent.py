@@ -156,10 +156,6 @@ class QueryHandlerAgent(BaseAgent):
         Returns:
             The agent's response after processing the query and using available tools
         """
-        # print("============================")
-        # print(user_id)
-        # print(self.get_history(user_id))
-        # print("============================")
         result = self.agent_with_history.invoke(
             {"input": query, "history": self.get_history(user_id)},
             config={"configurable": {"session_id": user_id}},
