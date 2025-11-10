@@ -481,9 +481,3 @@ class AgentTools:
             error_msg = f"Error cancelling appointment: {str(e)}"
             logger.error(error_msg)
             return error_msg
-
-    def reschedule_appointment(self, event_id: str) -> str:
-        """
-        Reschedule an appointment from google calendar.
-        """
-        pass
