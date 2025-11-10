@@ -7,8 +7,10 @@ QUERY_HANDLER_PROMPT = """
     ### WORKFLOW
     1. Call `search_clinic_database` once (it auto-triggers web search if needed) to answer users' queries.
     2. Use the information provided to answer clearly.
-    3. If the query is about an appointment, call either `list_available_slots` to list available slots, 
-        or `book_appointment` to book an appointment depending on the user's query.
+    3. If the query is about an appointment, call one of the following tools:
+        - `list_available_slots` to list available slots
+        - `book_appointment` to book an appointment
+        - `cancel_appointment` to cancel an appointment
 
     ### RULES
     - Use each tool ONCE per query.

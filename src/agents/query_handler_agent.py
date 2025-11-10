@@ -30,11 +30,11 @@ class QueryHandlerAgent(BaseAgent):
             rerank: Whether to enable reranking in the RAG system (default: True)
             max_search_results: Maximum number of search results to retrieve (default: 3)
         """
-        self.db_path = create_folder.create(DATA_DIR / 'database') / 'chat_history.db'
+        self.db_path = create_folder.create(DATA_DIR / "database") / "chat_history.db"
 
         logger.info("Initializing LLM...")
         self.llm = ChatCohere(
-            cohere_api_key=get_api_key.get_key("COHERE"),
+            cohere_api_key=get_api_key.get_key("COHERE")
         )
 
         logger.info("Initializing RAG system...")
@@ -64,10 +64,6 @@ class QueryHandlerAgent(BaseAgent):
     def _init_tools(self):
         """
         Initialize the tools available to the agent.
-
-        Creates two tools:
-        1. search_clinic_database: Searches the internal clinic knowledge base using RAG
-        2. search_web: Searches the web for additional medical information with URL references
         """
         self.tools = [
             Tool(
@@ -106,6 +102,14 @@ class QueryHandlerAgent(BaseAgent):
                     "date_str='November 03, 2025', time_str='01:40 PM', patient_name=None, patient_age=None, description=None, patient_email=None"
                 ),
             ),
+            Tool(
+                func=self.agent_tools.cancel_appointment,
+                name="cancel_appointment",
+                description=(
+                    "Cancel an appointment from Google Calendar. "
+                    "Pass the event ID as a string. Example: '129mqpqtkk8p0oadicc0o5fm2o'"
+                ),
+            ),
         ]
 
     def _init_agent(self):
@@ -140,7 +144,7 @@ class QueryHandlerAgent(BaseAgent):
             connection=f"sqlite:///{self.db_path}",
             table_name="messages",
             session_id=user_id,
-        )        
+        )
 
     def run(self, query: str, user_id: str):
         """
@@ -165,6 +169,8 @@ class QueryHandlerAgent(BaseAgent):
 
 if __name__ == "__main__":
     agent = QueryHandlerAgent()
-    result = agent.run("I have a really bad headache. What should I do?", "test_user_id")
+    result = agent.run(
+        "I have a really bad headache. What should I do?", "test_user_id"
+    )
 
     print(result)
