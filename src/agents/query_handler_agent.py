@@ -1,24 +1,20 @@
 from langchain.agents import (
     AgentExecutor,
-    create_openai_tools_agent,
     create_react_agent,
 )
-from langchain_community.chat_message_histories import SQLChatMessageHistory
 from langchain.tools import Tool
 from langchain_cohere import ChatCohere
-from langchain_core.prompts import (
-    ChatPromptTemplate,
-    MessagesPlaceholder,
-    PromptTemplate,
-)
+from langchain_community.chat_message_histories import SQLChatMessageHistory
+from langchain_core.prompts import PromptTemplate
 from langchain_core.runnables.history import RunnableWithMessageHistory
 
 from agents.base_agent import BaseAgent
 from agents.tools import AgentTools
 from rag.rag_system import RAGSystem
-from scripts import get_api_key
+from scripts import create_folder, get_api_key
 from settings import agent_config, prompts
 from settings.logger import get_logger
+from settings.paths import DATA_DIR
 
 logger = get_logger(__name__)
 
@@ -34,6 +30,8 @@ class QueryHandlerAgent(BaseAgent):
             rerank: Whether to enable reranking in the RAG system (default: True)
             max_search_results: Maximum number of search results to retrieve (default: 3)
         """
+        self.db_path = create_folder.create(DATA_DIR / 'database') / 'chat_history.db'
+
         logger.info("Initializing LLM...")
         self.llm = ChatCohere(
             cohere_api_key=get_api_key.get_key("COHERE"),
@@ -55,17 +53,12 @@ class QueryHandlerAgent(BaseAgent):
         """Initialize the prompt template for the ReAct agent."""
         prompt = PromptTemplate(
             template=prompts.ReAct_FRAMEWORK,
-            input_variables=["input", "agent_scratchpad"],
+            input_variables=["input", "agent_scratchpad", "history"],
             partial_variables={
                 "system_prompt": prompts.QUERY_HANDLER_PROMPT,
             },
         )
 
-        # prompt = ChatPromptTemplate.from_messages([
-        #     ("system", prompts.QUERY_HANDLER_PROMPT),
-        #     ("human", "{input}"),
-        #     MessagesPlaceholder(variable_name="agent_scratchpad"),
-        # ])
         return prompt
 
     def _init_tools(self):
@@ -135,7 +128,21 @@ class QueryHandlerAgent(BaseAgent):
             handle_parsing_errors=True,
         )
 
-    def run(self, query: str):
+        self.agent_with_history = RunnableWithMessageHistory(
+            self.agent_executor,
+            self.get_history,
+            input_messages_key="input",
+            history_messages_key="history",
+        )
+
+    def get_history(self, user_id: str):
+        return SQLChatMessageHistory(
+            connection=f"sqlite:///{self.db_path}",
+            table_name="messages",
+            session_id=user_id,
+        )        
+
+    def run(self, query: str, user_id: str):
         """
         Execute the agent with a given query.
 
@@ -145,12 +152,19 @@ class QueryHandlerAgent(BaseAgent):
         Returns:
             The agent's response after processing the query and using available tools
         """
-        result = self.agent_executor.invoke({"input": query})
+        # print("============================")
+        # print(user_id)
+        # print(self.get_history(user_id))
+        # print("============================")
+        result = self.agent_with_history.invoke(
+            {"input": query, "history": self.get_history(user_id)},
+            config={"configurable": {"session_id": user_id}},
+        )
         return result
 
 
 if __name__ == "__main__":
     agent = QueryHandlerAgent()
-    result = agent.run("I have a really bad headache. What should I do?")
+    result = agent.run("I have a really bad headache. What should I do?", "test_user_id")
 
     print(result)

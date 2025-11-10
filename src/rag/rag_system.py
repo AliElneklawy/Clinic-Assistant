@@ -25,6 +25,7 @@ class RAGSystem:
     similarity search. Optionally, reranks the retrieved documents using a
     language model.
     """
+
     def __init__(
         self,
         content_path: Path,
@@ -75,9 +76,7 @@ class RAGSystem:
         )
         return reranked
 
-    def find_relevant_context_with_sources(
-        self, query: str, top_k: int = 5
-    ) -> dict:
+    def find_relevant_context_with_sources(self, query: str, top_k: int = 5) -> dict:
         query_embedding = self._create_embeddings([query], is_query=True)[0]
 
         docs = self.vectorstore.similarity_search_by_vector(

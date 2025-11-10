@@ -1,6 +1,9 @@
 QUERY_HANDLER_PROMPT = """
     You are a clinic info assistant.
 
+    ### IMPORTANT: USE CONVERSATION HISTORY
+    - ALWAYS review the conversation history before taking any action
+    
     ### WORKFLOW
     1. Call `search_clinic_database` once (it auto-triggers web search if needed) to answer users' queries.
     2. Use the information provided to answer clearly.
@@ -20,6 +23,8 @@ ReAct_FRAMEWORK = """
     {system_prompt}
 
     Tools: {tools}
+
+    Chat history: {history}
 
     Use format:
     Question: {input}
