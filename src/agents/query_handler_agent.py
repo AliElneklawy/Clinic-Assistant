@@ -33,9 +33,7 @@ class QueryHandlerAgent(BaseAgent):
         self.db_path = create_folder.create(DATA_DIR / "database") / "chat_history.db"
 
         logger.info("Initializing LLM...")
-        self.llm = ChatCohere(
-            cohere_api_key=get_api_key.get_key("COHERE")
-        )
+        self.llm = ChatCohere(cohere_api_key=get_api_key.get_key("COHERE"))
 
         logger.info("Initializing RAG system...")
         self.rag = RAGSystem(
@@ -110,6 +108,15 @@ class QueryHandlerAgent(BaseAgent):
                     "Pass the event ID as a string. Example: '129mqpqtkk8p0oadicc0o5fm2o'"
                 ),
             ),
+            # Tool(
+            #     func=self.agent_tools.classify_diabetes,
+            #     name="classify_diabetes",
+            #     description=(
+            #         "Classify a patient's diabetes based on the following factors: "
+            #         "gender, age, hypertension, heart disease, smoking history, BMI, HbA1c level "
+            #         "and blood glucose level. "
+            #     ),
+            # ),
         ]
 
     def _init_agent(self):
@@ -156,6 +163,14 @@ class QueryHandlerAgent(BaseAgent):
         Returns:
             The agent's response after processing the query and using available tools
         """
+        # from langchain.schema import HumanMessage
+        # h = self.get_history("93979a18-8cac-404e-a16e-12bf931ac89c")
+        # output = "\n".join(
+        #     f"{'Human' if isinstance(msg, HumanMessage) else 'AI'}: {msg.content}"
+        #     for msg in h.messages[-4:]
+        # )
+        # print(output)
+        # exit()
         result = self.agent_with_history.invoke(
             {"input": query, "history": self.get_history(user_id)},
             config={"configurable": {"session_id": user_id}},

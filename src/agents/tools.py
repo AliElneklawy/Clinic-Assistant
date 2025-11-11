@@ -1,24 +1,27 @@
-import asyncio
 import datetime
-import json
-import uuid
 from functools import lru_cache
-from typing import List, Tuple
+from typing import List, Tuple, TypeVar, Type
 from urllib.parse import quote_plus, urlencode
 
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from langchain_tavily import TavilySearch
 
-from models.appointment import parse_to_model
+from pydantic import BaseModel
+from scripts.parse_str_in import parse_to
+from models.appointment import BookAppointmentInput
+# from models.classify_diabetes import ClassifyDiabetesInput
 from rag.rag_system import RAGSystem
 from scripts import get_api_key
 from scripts.auth_calendar import authenticate_calendar
 from settings import agent_config, clinic_config
 from settings.logger import get_logger
+# from settings.paths import DIABETES_MODEL_PATH
+
 
 logger = get_logger(__name__)
 
+T = TypeVar('T', bound=BaseModel)
 
 class AgentTools:
     def __init__(self, rag: RAGSystem):
@@ -157,6 +160,18 @@ class AgentTools:
         except Exception as e:
             logger.error(f"Error searching web: {e}")
             return f"Unable to search web. Error: {str(e)}"
+
+    # def classify_diabetes(self, data: str):
+    #     (
+    #         gender,
+    #         age,
+    #         hypertension,
+    #         heart_disease,
+    #         smoking_history,
+    #         bmi,
+    #         HbA1c_level,
+    #         blood_glucose_level,
+    #     ) = self._unpack_data(data, ClassifyDiabetesInput)
 
     def _is_slot_available(
         self,
@@ -306,32 +321,33 @@ class AgentTools:
 
         return event
 
-    def _unpack_data(self, data: str):
-        data = parse_to_model(data.rstrip("O"))
+    def _unpack_data(self, data: str, model: Type[T]):
+        parsed_data = parse_to(data.rstrip("O"), model)
+        return tuple(v for v in parsed_data.model_dump().values())
 
-        (
-            appointment_date,
-            appointment_time,
-            patient_name,
-            patient_age,
-            description,
-            patient_email,
-        ) = (
-            data.date_str,
-            data.time_str,
-            data.patient_name,
-            data.patient_age,
-            data.description,
-            data.patient_email,
-        )
-        return (
-            appointment_date,
-            appointment_time,
-            patient_name,
-            patient_age,
-            description,
-            patient_email,
-        )
+        # (
+        #     appointment_date,
+        #     appointment_time,
+        #     patient_name,
+        #     patient_age,
+        #     description,
+        #     patient_email,
+        # ) = (
+        #     data.date_str,
+        #     data.time_str,
+        #     data.patient_name,
+        #     data.patient_age,
+        #     data.description,
+        #     data.patient_email,
+        # )
+        # return (
+        #     appointment_date,
+        #     appointment_time,
+        #     patient_name,
+        #     patient_age,
+        #     description,
+        #     patient_email,
+        # )
 
     def book_appointment(self, data: str) -> str:
         """
@@ -351,7 +367,8 @@ class AgentTools:
             patient_age,
             description,
             patient_email,
-        ) = self._unpack_data(data)
+        ) = self._unpack_data(data, BookAppointmentInput)
+
         try:
             # Verify the slot is still available
             start_datetime = datetime.datetime.combine(

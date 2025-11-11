@@ -1,5 +1,3 @@
-import ast
-import re
 from datetime import date, datetime, time
 from typing import Optional
 
@@ -53,16 +51,16 @@ class BookAppointmentInput(BaseModel):
             raise ValueError(f"Invalid age value: {v}")
 
 
-def parse_to_model(arg_str: str) -> BookAppointmentInput:
-    """
-    Parse the output of the LLM into a BookAppointmentInput model
-    to be properly handled by the book_appointment tool.
-    """
-    # Turn "a=1, b='x'" → "{'a':1, 'b':'x'}"
-    cleaned = re.sub(r"(\w+)\s*=", r"'\1':", arg_str)
-    cleaned = "{" + cleaned + "}"
-    data = ast.literal_eval(cleaned)
-    return BookAppointmentInput(**data)
+# def parse_to_model(arg_str: str) -> BookAppointmentInput:
+#     """
+#     Parse the output of the LLM into a BookAppointmentInput model
+#     to be properly handled by the book_appointment tool.
+#     """
+#     # Turn "a=1, b='x'" → "{'a':1, 'b':'x'}"
+#     cleaned = re.sub(r"(\w+)\s*=", r"'\1':", arg_str)
+#     cleaned = "{" + cleaned + "}"
+#     data = ast.literal_eval(cleaned)
+#     return BookAppointmentInput(**data)
 
 
 # raw = "date_str='November 03, 2025', time_str='01:40 PM', patient_name=None, patient_age=None, description=None, patient_email=None"
