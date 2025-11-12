@@ -1,27 +1,34 @@
-import asyncio
 import datetime
-import json
-import uuid
 from functools import lru_cache
-from typing import List, Tuple
+from typing import List, Tuple, Type, TypeVar
 from urllib.parse import quote_plus, urlencode
 
+import joblib
+import numpy as np
+import pandas as pd
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from langchain_tavily import TavilySearch
+from pydantic import BaseModel
 
-from models.appointment import parse_to_model
+from models.appointment import BookAppointmentInput
+from models.classify_diabetes import ClassifyDiabetesInput
 from rag.rag_system import RAGSystem
 from scripts import get_api_key
 from scripts.auth_calendar import authenticate_calendar
+from scripts.parse_str_in import parse_to
 from settings import agent_config, clinic_config
 from settings.logger import get_logger
+from settings.paths import DIABETES_MODEL_PATH
 
 logger = get_logger(__name__)
+
+T = TypeVar("T", bound=BaseModel)
 
 
 class AgentTools:
     def __init__(self, rag: RAGSystem):
+        self.model = joblib.load(DIABETES_MODEL_PATH)
         self.rag = rag
 
         self.tavily_search = TavilySearch(
@@ -157,6 +164,88 @@ class AgentTools:
         except Exception as e:
             logger.error(f"Error searching web: {e}")
             return f"Unable to search web. Error: {str(e)}"
+
+    def preprocess(
+        self,
+        gender,
+        age,
+        hypertension,
+        heart_disease,
+        smoking_history,
+        bmi,
+        HbA1c_level,
+        blood_glucose_level,
+    ):
+        df = pd.DataFrame(
+            {
+                "gender": [gender],
+                "age": [age],
+                "hypertension": [hypertension],
+                "heart_disease": [heart_disease],
+                "smoking_history": [smoking_history],
+                "bmi": [bmi],
+                "HbA1c_level": [HbA1c_level],
+                "blood_glucose_level": [blood_glucose_level],
+            }
+        )
+
+        df["AgeCat"] = pd.cut(
+            df["age"],
+            bins=[-np.inf, 1, 12, 18, 65, np.inf],
+            labels=["infant", "child", "teenager", "adult", "older_adult"],
+        )
+
+        df["BMICat"] = pd.cut(
+            df["bmi"],
+            bins=[-np.inf, 18.5, 25, 30, np.inf],
+            labels=["underweight", "normal", "overweight", "obese"],
+        )
+
+        df["GlucoseCat"] = pd.cut(
+            df["blood_glucose_level"],
+            bins=[-np.inf, 140, 200, np.inf],
+            labels=["normal", "impaired", "diabetic"],
+        )
+
+        df["HbA1cCat"] = pd.cut(
+            df["HbA1c_level"],
+            bins=[0, 5.6, 6.4, np.inf],
+            labels=["normal", "prediabetic", "diabetic"],
+        )
+
+        return df
+
+    def classify_diabetes(self, data: str):
+        """
+        Classify a patient's diabetes based on various factors.
+        returns a string with the probability of the patient being diabetic and the final diagnosis.
+        """
+        (
+            gender,
+            age,
+            hypertension,
+            heart_disease,
+            smoking_history,
+            bmi,
+            HbA1c_level,
+            blood_glucose_level,
+        ) = self._unpack_data(data, ClassifyDiabetesInput)
+
+        df = self.preprocess(
+            gender,
+            age,
+            hypertension,
+            heart_disease,
+            smoking_history,
+            bmi,
+            HbA1c_level,
+            blood_glucose_level,
+        )
+
+        prediction = self.model.predict(df)
+        prediction_proba = self.model.predict_proba(df)[0][1]
+
+        return f"Probability of being diabetic: {(prediction_proba * 100).round(2)}%.\nFinal diagnosis: {'diabetic' if prediction == 1 else 'non-diabetic'}."
 
     def _is_slot_available(
         self,
@@ -306,32 +395,33 @@ class AgentTools:
 
         return event
 
-    def _unpack_data(self, data: str):
-        data = parse_to_model(data.rstrip("O"))
+    def _unpack_data(self, data: str, model: Type[T]):
+        parsed_data = parse_to(data.rstrip("O"), model)
+        return tuple(v for v in parsed_data.model_dump().values())
 
-        (
-            appointment_date,
-            appointment_time,
-            patient_name,
-            patient_age,
-            description,
-            patient_email,
-        ) = (
-            data.date_str,
-            data.time_str,
-            data.patient_name,
-            data.patient_age,
-            data.description,
-            data.patient_email,
-        )
-        return (
-            appointment_date,
-            appointment_time,
-            patient_name,
-            patient_age,
-            description,
-            patient_email,
-        )
+        # (
+        #     appointment_date,
+        #     appointment_time,
+        #     patient_name,
+        #     patient_age,
+        #     description,
+        #     patient_email,
+        # ) = (
+        #     data.date_str,
+        #     data.time_str,
+        #     data.patient_name,
+        #     data.patient_age,
+        #     data.description,
+        #     data.patient_email,
+        # )
+        # return (
+        #     appointment_date,
+        #     appointment_time,
+        #     patient_name,
+        #     patient_age,
+        #     description,
+        #     patient_email,
+        # )
 
     def book_appointment(self, data: str) -> str:
         """
@@ -351,7 +441,8 @@ class AgentTools:
             patient_age,
             description,
             patient_email,
-        ) = self._unpack_data(data)
+        ) = self._unpack_data(data, BookAppointmentInput)
+
         try:
             # Verify the slot is still available
             start_datetime = datetime.datetime.combine(
