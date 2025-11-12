@@ -4,6 +4,7 @@ import shutil
 import time
 from pathlib import Path
 from typing import List, Optional
+import threading
 
 import cohere
 import html2text
@@ -255,6 +256,21 @@ class RAGSystem:
         """Save vectorstore to disk."""
         logger.info(f"Saving index to {path}")
         vectorstore.save_local(path)
+
+    def _update_vectorstore(self, new_content: str):
+        with threading.Lock():
+            chunks = self._create_chunks(new_content)
+            text_embeddings = list(zip(chunks, self._create_embeddings(chunks)))
+            existing_chunks = len(self.vectorstore.index_to_docstore_id)
+            metadatas = [
+                {"source": f"chunk_{existing_chunks + i}"} for i in range(len(chunks))
+            ]
+
+            self.vectorstore.add_embeddings(
+                text_embeddings=text_embeddings, metadatas=metadatas
+            )
+            self._save_vectorstore(self.vectorstore, self.current_index_path)
+        logger.info(f"Vectorstore updated successfully with {len(chunks)} new chunks")
 
     def _create_chunks(self, text: str) -> List[str]:
         """Create chunks using the specified chunking method."""

@@ -399,30 +399,6 @@ class AgentTools:
         parsed_data = parse_to(data.rstrip("O"), model)
         return tuple(v for v in parsed_data.model_dump().values())
 
-        # (
-        #     appointment_date,
-        #     appointment_time,
-        #     patient_name,
-        #     patient_age,
-        #     description,
-        #     patient_email,
-        # ) = (
-        #     data.date_str,
-        #     data.time_str,
-        #     data.patient_name,
-        #     data.patient_age,
-        #     data.description,
-        #     data.patient_email,
-        # )
-        # return (
-        #     appointment_date,
-        #     appointment_time,
-        #     patient_name,
-        #     patient_age,
-        #     description,
-        #     patient_email,
-        # )
-
     def book_appointment(self, data: str) -> str:
         """
         Book an appointment on Google Calendar.
