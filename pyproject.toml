@@ -13,6 +13,7 @@ dependencies = [
     "google-auth-httplib2>=0.2.1",
     "google-auth-oauthlib>=1.2.3",
     "html2text>=2025.4.15",
+    "joblib==1.5.2",
     "langchain-cohere>=0.4.6",
     "langchain-docling>=1.1.0",
     "langchain-tavily>=0.2.12",
