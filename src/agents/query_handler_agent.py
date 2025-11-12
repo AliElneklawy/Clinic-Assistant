@@ -108,15 +108,16 @@ class QueryHandlerAgent(BaseAgent):
                     "Pass the event ID as a string. Example: '129mqpqtkk8p0oadicc0o5fm2o'"
                 ),
             ),
-            # Tool(
-            #     func=self.agent_tools.classify_diabetes,
-            #     name="classify_diabetes",
-            #     description=(
-            #         "Classify a patient's diabetes based on the following factors: "
-            #         "gender, age, hypertension, heart disease, smoking history, BMI, HbA1c level "
-            #         "and blood glucose level. "
-            #     ),
-            # ),
+            Tool(
+                func=self.agent_tools.classify_diabetes,
+                name="classify_diabetes",
+                description=(
+                    "Classify a patient's diabetes based on various factors. "
+                    "Always mention the probability of being diabetic and the final diagnosis. "
+                    "Pass the data in the follownig example string format (all the fields are MANDATORY): \n"
+                    "gender='Male', age=30, hypertension='yes', heart_disease='no', smoking_history='never', bmi=25.0, HbA1c_level=5.5, blood_glucose_level=120"
+                ),
+            ),
         ]
 
     def _init_agent(self):
