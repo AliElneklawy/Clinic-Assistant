@@ -1,10 +1,10 @@
 import hashlib
 import re
 import shutil
+import threading
 import time
 from pathlib import Path
 from typing import List, Optional
-import threading
 
 import cohere
 import html2text
@@ -31,7 +31,7 @@ class RAGSystem:
         self,
         content_path: Path,
         index_path: Optional[str] = None,
-        rerank: bool = False,
+        rerank: bool = True,
         chunking_type: str = "recursive",
     ):
         self.rerank = rerank
@@ -257,7 +257,7 @@ class RAGSystem:
         logger.info(f"Saving index to {path}")
         vectorstore.save_local(path)
 
-    def _update_vectorstore(self, new_content: str):
+    def update_vectorstore(self, new_content: str):
         with threading.Lock():
             chunks = self._create_chunks(new_content)
             text_embeddings = list(zip(chunks, self._create_embeddings(chunks)))

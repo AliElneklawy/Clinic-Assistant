@@ -2,11 +2,11 @@ from langchain.agents import (
     AgentExecutor,
     create_react_agent,
 )
+from langchain.schema import HumanMessage
 from langchain.tools import Tool
 from langchain_cohere import ChatCohere
 from langchain_community.chat_message_histories import SQLChatMessageHistory
 from langchain_core.prompts import PromptTemplate
-from langchain.schema import HumanMessage
 from langchain_core.runnables.history import RunnableWithMessageHistory
 
 from agents.base_agent import BaseAgent
@@ -170,14 +170,14 @@ class QueryHandlerAgent(BaseAgent):
         h = self.get_history(user_id)
         last_n_messages = "\n".join(
             f"{'Human' if isinstance(msg, HumanMessage) else 'AI'}: {msg.content}"
-            for msg in h.messages[-agent_config.LAST_N_MESSAGES:]
+            for msg in h.messages[-agent_config.LAST_N_MESSAGES :]
         )
 
         result = self.agent_with_history.invoke(
             {"input": query, "history": last_n_messages},
             config={"configurable": {"session_id": user_id}},
         )
-        
+
         return result
 
 
