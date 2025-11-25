@@ -1,0 +1,75 @@
+"""
+Builds and returns the `AgentTools` instance used by the agent.
+
+This function wires together:
+- A RAG system for local medical information retrieval.
+- Google Calendar services (authentication, event building, slot management).
+- Hybrid search (Tavily web search + local RAG database search).
+- A diabetes classification model loaded via joblib.
+
+All services are initialized and packaged into a single `AgentTools` object,
+which the agent uses to perform calendar operations, search queries, and ML-based
+diabetes prediction.
+"""
+
+import joblib
+from googleapiclient.discovery import build
+from langchain_tavily import TavilySearch
+
+from agents.tools import AgentTools
+from rag.rag_system import RAGSystem
+from scripts import get_api_key
+from scripts.auth_calendar import authenticate_calendar
+from services.calendar.calendar_service import CalendarService
+from services.calendar.event_builder import EventBuilder
+from services.calendar.slot_manager import SlotManager
+from services.database.database_service import DatabaseOpsService
+from services.ml.classify_diabetes import ClassifyDiabetesService
+from services.search.database_search_service import DatabaseSearchService
+from services.search.hybrid_search_service import HybridSearchService
+from services.search.web_search_service import WebSearchService
+from settings import agent_config
+from settings.paths import DIABETES_MODEL_PATH, INDEXES_DIR, MED_DATA_FILE
+
+
+def create_agent_tools():
+    rag = RAGSystem(
+        content_path=MED_DATA_FILE,
+        index_path=INDEXES_DIR / "index_7ad274e90429ac4.faiss.temp",
+    )
+
+    # Database services
+    db_service = DatabaseOpsService("appointments.db")
+
+    # Calendar services
+    event_builder = EventBuilder()
+    slot_manager = SlotManager()
+    calendar_service = CalendarService(
+        event_builder=event_builder,
+        slot_manager=slot_manager,
+        db=db_service,
+        service=build("calendar", "v3", credentials=authenticate_calendar()),
+    )
+
+    # Search services
+    tavily_search = TavilySearch(
+        tavily_api_key=get_api_key.get_key("TAVILY_SEARCH"),
+        max_results=agent_config.MAX_SEARCH_RESULTS,
+        search_depth="advanced",
+        include_answer=True,
+        include_raw_content=False,
+    )
+    web_search = WebSearchService(tavily_search)
+    db_search = DatabaseSearchService(rag)
+    hyprid_search_service = HybridSearchService(db_search, web_search)
+
+    # ML services
+    classify_diabetes_service = ClassifyDiabetesService(
+        model=joblib.load(DIABETES_MODEL_PATH)
+    )
+
+    return AgentTools(
+        calendar_service=calendar_service,
+        search_service=hyprid_search_service,
+        diabetes_classifier_service=classify_diabetes_service,
+    )

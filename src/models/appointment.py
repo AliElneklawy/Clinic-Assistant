@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field, field_validator
 class BookAppointmentInput(BaseModel):
     date_str: date = Field(..., description="Appointment date")
     time_str: time = Field(..., description="Appointment time")
+    user_id: str = Field(..., description="User ID")
     patient_name: Optional[str] = Field(None, description="Name of the patient")
     patient_age: Optional[int] = Field(None, description="Age of the patient")
     description: Optional[str] = Field(None, description="Reason for visit")

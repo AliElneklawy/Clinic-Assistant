@@ -11,7 +11,7 @@ from langchain_core.runnables.history import RunnableWithMessageHistory
 
 from agents.base_agent import BaseAgent
 from agents.tools import AgentTools
-from rag.rag_system import RAGSystem
+from container import create_agent_tools
 from scripts import create_folder, get_api_key
 from settings import agent_config, prompts
 from settings.logger import get_logger
@@ -21,7 +21,7 @@ logger = get_logger(__name__)
 
 
 class QueryHandlerAgent(BaseAgent):
-    def __init__(self, content_path, index_path, rerank: bool = True):
+    def __init__(self):
         """
         Initialize the QueryHandlerAgent with RAG system and LLM.
 
@@ -36,15 +36,8 @@ class QueryHandlerAgent(BaseAgent):
         logger.info("Initializing LLM...")
         self.llm = ChatCohere(cohere_api_key=get_api_key.get_key("COHERE"))
 
-        logger.info("Initializing RAG system...")
-        self.rag = RAGSystem(
-            content_path=content_path,
-            index_path=index_path,
-            rerank=rerank,
-        )
-
         logger.info("Initializing tools...")
-        self.agent_tools = AgentTools(rag=self.rag)
+        self.agent_tools = create_agent_tools()  # AgentTools(rag=self.rag)
 
         super().__init__()
 
@@ -98,7 +91,7 @@ class QueryHandlerAgent(BaseAgent):
                     "Book an appointment on Google Calendar. "
                     "Make sure that the appointment is available before booking by calling list_available_slots first."
                     "Pass the data in the follownig example string format: \n"
-                    "date_str='November 03, 2025', time_str='01:40 PM', patient_name=None, patient_age=None, description=None, patient_email=None"
+                    "date_str='November 03, 2025', time_str='01:40 PM', user_id='xxxxxx', patient_name=None, patient_age=None, description=None, patient_email=None"
                 ),
             ),
             Tool(
@@ -167,6 +160,8 @@ class QueryHandlerAgent(BaseAgent):
         Returns:
             The agent's response after processing the query and using available tools
         """
+        query = f"[User ID: {user_id}\n{query}"
+
         h = self.get_history(user_id)
         last_n_messages = "\n".join(
             f"{'Human' if isinstance(msg, HumanMessage) else 'AI'}: {msg.content}"

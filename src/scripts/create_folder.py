@@ -1,7 +1,7 @@
 from pathlib import Path
 
 
-def create(path: str):
+def create(path: str) -> Path:
     """
     Create parent directory for a given file path or create the directory itself.
     """

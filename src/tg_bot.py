@@ -14,7 +14,6 @@ from telegram.ext import (
 
 from agents.query_handler_agent import QueryHandlerAgent
 from settings.logger import get_logger
-from settings.paths import INDEXES_DIR, MED_DATA_FILE
 
 load_dotenv()
 logger = get_logger(__name__)
@@ -24,10 +23,7 @@ class TelegramBot:
     def __init__(self):
         self.admins = json.loads(os.getenv("ADMINS"))
 
-        self.agent = QueryHandlerAgent(
-            content_path=MED_DATA_FILE,
-            index_path=INDEXES_DIR / "index_7ad274e90429ac4.faiss.temp",
-        )
+        self.agent = QueryHandlerAgent()
 
         self.application = (
             Application.builder()
