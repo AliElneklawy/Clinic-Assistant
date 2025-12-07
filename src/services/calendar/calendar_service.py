@@ -174,7 +174,7 @@ class CalendarService:
 
             self.db.insert_appointment(
                 user_id,
-                created_event['id'],
+                created_event["id"],
                 patient_name,
                 patient_age,
                 patient_email,
@@ -212,7 +212,13 @@ class CalendarService:
             self.service.events().delete(
                 calendarId=clinic_config.CALENDAR_ID, eventId=event_id
             ).execute()
-            self.db.cancel_appointment(event_id)
+            # self.db.cancel_appointment(event_id)
+            self.db.update_field(
+                table_name="appointments",
+                field_name="status",
+                value="cancelled",
+                condition=f"event_id = '{event_id}'",
+            )
             return f"Appointment cancelled successfully for event ID: {event_id}"
         except HttpError as e:
             error_msg = f"Google Calendar API error: {str(e)}"

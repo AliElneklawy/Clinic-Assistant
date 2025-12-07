@@ -4,6 +4,7 @@ CHUNK_SIZE: int = 1500
 TEMPERATURE: float = 0.0
 CHUNK_OVERLAP: int = 150
 MAX_OUT_TOKENS: int = 1500
+EMBED_BATCH_SIZE: int = 10
 
 
 # class LLMConfig:

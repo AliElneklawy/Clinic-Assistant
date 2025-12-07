@@ -1,11 +1,13 @@
 import json
 import os
+from datetime import datetime, timedelta
 
 from dotenv import load_dotenv
-from telegram import Update
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.constants import ParseMode
 from telegram.ext import (
     Application,
+    CallbackQueryHandler,
     CommandHandler,
     ContextTypes,
     MessageHandler,
@@ -13,6 +15,8 @@ from telegram.ext import (
 )
 
 from agents.query_handler_agent import QueryHandlerAgent
+from services.calendar.calendar_service import CalendarService
+from services.database.database_service import DatabaseOpsService
 from settings.logger import get_logger
 
 load_dotenv()
@@ -20,10 +24,11 @@ logger = get_logger(__name__)
 
 
 class TelegramBot:
-    def __init__(self):
+    def __init__(self, agent: QueryHandlerAgent, db: DatabaseOpsService):
         self.admins = json.loads(os.getenv("ADMINS"))
 
-        self.agent = QueryHandlerAgent()
+        self.agent = agent
+        self.db = db
 
         self.application = (
             Application.builder()
@@ -33,16 +38,58 @@ class TelegramBot:
         )
 
         self.register_handlers()
+        self.register_jobs()
 
     def register_handlers(self):
         self.application.add_handler(CommandHandler("start", self.start))
         self.application.add_handler(CommandHandler("help", self.help))
         self.application.add_handler(CommandHandler("add_content", self.add_content))
+        self.application.add_handler(CallbackQueryHandler(self.button_handler))
         self.application.add_handler(
             MessageHandler(filters.TEXT & ~filters.COMMAND, self.handle_message)
         )
 
+    def register_jobs(self):
+        self.application.job_queue.run_repeating(self.send_medical_fact, interval=3600)
+        self.application.job_queue.run_repeating(
+            self.confirm_appointment, interval=3600
+        )
+
+    @staticmethod
+    def create_keyboard(texts: list[str], callback_data: list[str]):
+        return InlineKeyboardMarkup(
+            [
+                [
+                    InlineKeyboardButton(text=text, callback_data=callback_data)
+                    for text, callback_data in zip(texts, callback_data)
+                ]
+            ]
+        )
+
+    async def button_handler(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        query = update.callback_query
+        await query.answer()
+        response, event_id = query.data.split(":")
+
+        if response == "user_confirmed":
+            self.db.update_field(
+                table_name="appointments",
+                field_name="status",
+                value="confirmed",
+                condition=f"event_id = '{event_id}'",
+            )
+            await query.edit_message_text("✅ Appointment confirmed. See you there!")
+        elif response == "user_cancelled":
+            self.agent.agent_tools.cancel_appointment(event_id)
+            await query.edit_message_text("❌ Appointment cancelled.")
+
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        user_id = update.message.from_user.id
+        chat_id = update.message.chat.id
+
+        if not self.db.get_bot_subscribers(user_id):  # If the user is not subscribed
+            self.db.insert_bot_subscriber(user_id=user_id, chat_id=chat_id)
+
         await update.message.reply_text(
             "Welcome to our clinic. Here is what I can do: \n\n"
             "   1. Search the clinic's knowledge base\n"
@@ -99,9 +146,81 @@ class TelegramBot:
         user_id = update.message.from_user.id
 
         await update.message.chat.send_action("typing")
-
         response = self.agent.run(query, user_id)
         await update.message.reply_text(response["output"])
+
+    async def send_medical_fact(self, context: ContextTypes.DEFAULT_TYPE):
+        """Send a medical fact to bot subscribers"""
+        fact = self.db.get_medical_fact()
+        users = self.db.get_bot_subscribers(get_all=True)
+
+        for _, _, chat_id, _, last_fact_sent in users:
+            if datetime.fromisoformat(last_fact_sent) < datetime.now() - timedelta(
+                days=1
+            ):
+                await context.bot.send_message(
+                    chat_id=chat_id,
+                    text=f"💡 <b>Daily Health Tip:</b>\n\n{fact}",
+                    parse_mode=ParseMode.HTML,
+                )
+
+                self.db.update_field(
+                    table_name="bot_subscribers",
+                    field_name="last_fact",
+                    value=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    condition=f"chat_id = '{chat_id}'",
+                )
+
+    async def confirm_appointment(self, context: ContextTypes.DEFAULT_TYPE):
+        appointments = self.db.get_appointments()
+        for (
+            _,
+            user_id,
+            event_id,
+            _,
+            _,
+            _,
+            date_time,
+            _,
+            status,
+            confirmation_sent,
+        ) in appointments:
+            if confirmation_sent:
+                continue
+
+            if status == "scheduled" and datetime.fromisoformat(
+                date_time
+            ) - datetime.now() < timedelta(hours=24):
+                keyboard = self.create_keyboard(
+                    texts=["✅ I'm coming", "❌ Sorry, I'll cancel"],
+                    callback_data=[
+                        f"user_confirmed:{event_id}",
+                        f"user_cancelled:{event_id}",
+                    ],
+                )
+
+                await context.bot.send_message(
+                    chat_id=user_id,
+                    text=(
+                        f"⏰ <b>Appointment Reminder</b>\n\n"
+                        f"You have an upcoming appointment on <b>{date_time}</b>\n"
+                        f"Event ID: <code>{event_id}</code>\n\n"
+                        f"Please confirm or cancel:"
+                    ),
+                    reply_markup=keyboard,
+                    parse_mode=ParseMode.HTML,
+                )
+
+                self.db.update_field(
+                    table_name="appointments",
+                    field_name="confirmation_sent",
+                    value=True,
+                    condition=f"event_id = '{event_id}'",
+                )
+
+            elif status == "confirmed" and datetime.fromisoformat(date_time) - datetime.now() < timedelta(hours=4):
+                # Send confirmation email 4 hours before the appointment
+                pass
 
     def run(self):
         logger.info("========= Bot is running =========")
@@ -109,7 +228,10 @@ class TelegramBot:
 
 
 if __name__ == "__main__":
-    bot = TelegramBot()
+    agent = QueryHandlerAgent()
+    db = DatabaseOpsService()
+    bot = TelegramBot(agent, db)
+
     bot.run()
 
 
@@ -118,7 +240,7 @@ if __name__ == "__main__":
 
 # View My Appointments – Let patients list their upcoming bookings.
 # → e.g., /my_appointments
-# Reminders / Notifications – Schedule automatic reminders before appointments using JobQueue.
+# [DONE] Reminders / Notifications – Schedule automatic reminders before appointments using JobQueue.
 # Reschedule Flow – Implement a guided conversation to change date/time easily.
 # Confirmations – Send confirmation messages (and maybe email) after booking/canceling.
 

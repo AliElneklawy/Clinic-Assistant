@@ -35,11 +35,11 @@ from settings.paths import DIABETES_MODEL_PATH, INDEXES_DIR, MED_DATA_FILE
 def create_agent_tools():
     rag = RAGSystem(
         content_path=MED_DATA_FILE,
-        index_path=INDEXES_DIR / "index_7ad274e90429ac4.faiss.temp",
+        index_path=INDEXES_DIR,  # / "index_7ad274e90429ac4.faiss.temp" / "index_6c65bfa3c607d34.faiss",
     )
 
     # Database services
-    db_service = DatabaseOpsService("appointments.db")
+    db_service = DatabaseOpsService()
 
     # Calendar services
     event_builder = EventBuilder()
