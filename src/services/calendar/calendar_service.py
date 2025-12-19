@@ -86,7 +86,7 @@ class CalendarService:
 
         Args:
             data: String containing appointment data in the following format:
-            date_str='November 03, 2025', time_str='01:40 PM', patient_name=None, patient_age=None, description=None, patient_email=None
+            date_str='November 03, 2025', time_str='01:40 PM', patient_name='Ali', patient_age=25, description='Test', patient_email='test@example.com'
 
         Returns:
             Confirmation message containing the event ID and a link to the event in Google Calendar.

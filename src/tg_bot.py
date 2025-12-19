@@ -15,8 +15,11 @@ from telegram.ext import (
 )
 
 from agents.query_handler_agent import QueryHandlerAgent
-from services.calendar.calendar_service import CalendarService
+from scripts import get_api_key
+
+# from services.calendar.calendar_service import CalendarService
 from services.database.database_service import DatabaseOpsService
+from services.email.email_service import EmailService
 from settings.logger import get_logger
 
 load_dotenv()
@@ -24,11 +27,14 @@ logger = get_logger(__name__)
 
 
 class TelegramBot:
-    def __init__(self, agent: QueryHandlerAgent, db: DatabaseOpsService):
+    def __init__(
+        self, agent: QueryHandlerAgent, db: DatabaseOpsService, email: EmailService
+    ):
         self.admins = json.loads(os.getenv("ADMINS"))
 
         self.agent = agent
         self.db = db
+        self.email = email
 
         self.application = (
             Application.builder()
@@ -51,9 +57,7 @@ class TelegramBot:
 
     def register_jobs(self):
         self.application.job_queue.run_repeating(self.send_medical_fact, interval=3600)
-        self.application.job_queue.run_repeating(
-            self.confirm_appointment, interval=3600
-        )
+        self.application.job_queue.run_repeating(self.confirm_appointment, interval=10)
 
     @staticmethod
     def create_keyboard(texts: list[str], callback_data: list[str]):
@@ -177,20 +181,24 @@ class TelegramBot:
             _,
             user_id,
             event_id,
+            patient_name,
             _,
-            _,
-            _,
+            patient_email,
             date_time,
             _,
             status,
             confirmation_sent,
+            email_sent,
         ) in appointments:
-            if confirmation_sent:
+            if confirmation_sent and email_sent:
+                logger.info(f"Appointment {event_id} already confirmed and emailed")
                 continue
 
             if status == "scheduled" and datetime.fromisoformat(
                 date_time
             ) - datetime.now() < timedelta(hours=24):
+                logger.info(f"Sending confirmation message for appointment {event_id}")
+
                 keyboard = self.create_keyboard(
                     texts=["✅ I'm coming", "❌ Sorry, I'll cancel"],
                     callback_data=[
@@ -218,9 +226,21 @@ class TelegramBot:
                     condition=f"event_id = '{event_id}'",
                 )
 
-            elif status == "confirmed" and datetime.fromisoformat(date_time) - datetime.now() < timedelta(hours=4):
+            elif status == "confirmed" and datetime.fromisoformat(
+                date_time
+            ) - datetime.now() < timedelta(hours=49):
                 # Send confirmation email 4 hours before the appointment
-                pass
+                logger.info(f"Sending confirmation email to {patient_email}")
+                self.email.send_appointment_confirmation(
+                    patient_email, patient_name, date_time
+                )
+
+                self.db.update_field(
+                    table_name="appointments",
+                    field_name="email_sent",
+                    value=True,
+                    condition=f"event_id = '{event_id}'",
+                )
 
     def run(self):
         logger.info("========= Bot is running =========")
@@ -230,7 +250,11 @@ class TelegramBot:
 if __name__ == "__main__":
     agent = QueryHandlerAgent()
     db = DatabaseOpsService()
-    bot = TelegramBot(agent, db)
+    email = EmailService(
+        sender_email=get_api_key.get_key("SENDER_EMAIL"),
+        app_password=get_api_key.get_key("GMAIL_APP_PASSWORD"),
+    )
+    bot = TelegramBot(agent, db, email)
 
     bot.run()
 

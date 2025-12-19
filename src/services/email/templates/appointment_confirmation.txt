@@ -1,0 +1,29 @@
+Dear {patient_name},
+
+This is a friendly reminder about your upcoming appointment.
+
+APPOINTMENT DETAILS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Date:     {formatted_date}
+Time:     {formatted_time}
+Doctor:   {doctor_name}
+Location: {clinic_name}
+{f'Address:  {clinic_address}' if clinic_address else ''}
+{f'Phone:    {clinic_phone}' if clinic_phone else ''}
+
+IMPORTANT REMINDERS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+• Please arrive 10-15 minutes early to complete any necessary paperwork
+• Bring your insurance card and a valid photo ID
+• If you need to cancel or reschedule, please contact us at least 24 hours in advance
+
+If you have any questions or need to make changes to your appointment, please contact us as soon as possible.
+
+We look forward to seeing you!
+
+Best regards,
+{clinic_name}
+{f'{clinic_phone}' if clinic_phone else ''}
+
+---
+This is an automated reminder. Please do not reply to this email.

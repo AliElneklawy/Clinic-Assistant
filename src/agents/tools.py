@@ -3,6 +3,7 @@ from typing import TypeVar
 from pydantic import BaseModel
 
 from services.calendar.calendar_service import CalendarService
+from services.email.email_service import EmailService
 from services.ml.classify_diabetes import ClassifyDiabetesService
 from services.search.hybrid_search_service import HybridSearchService
 from settings.logger import get_logger
@@ -18,10 +19,12 @@ class AgentTools:
         search_service: HybridSearchService,
         calendar_service: CalendarService,
         diabetes_classifier_service: ClassifyDiabetesService,
+        email_service: EmailService,
     ):
         self.search_service = search_service
         self.calendar_service = calendar_service
         self.diabetes_classifier_service = diabetes_classifier_service
+        self.email_service = email_service
 
     def search_clinic_database(self, query: str) -> str:
         """
@@ -67,7 +70,7 @@ class AgentTools:
 
         Args:
             data: String containing appointment data in the following format:
-            date_str='November 03, 2025', time_str='01:40 PM', patient_name=None, patient_age=None, description=None, patient_email=None
+            date_str='November 03, 2025', time_str='01:40 PM', patient_name='Ali', patient_age=25, description='Test', patient_email='test@example.com'
 
         Returns:
             Confirmation message containing the event ID and a link to the event in Google Calendar.

@@ -9,7 +9,8 @@ CREATE TABLE IF NOT EXISTS appointments (
     date_time INTEGER,      -- Unix timestamp for date
     description TEXT,
     status TEXT CHECK(status IN ('scheduled', 'cancelled', 'confirmed')) DEFAULT 'scheduled',
-    confirmation_sent BOOLEAN DEFAULT FALSE
+    confirmation_sent BOOLEAN DEFAULT FALSE,
+    email_sent BOOLEAN DEFAULT FALSE
 );
 """
 

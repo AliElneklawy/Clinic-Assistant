@@ -91,8 +91,8 @@ class QueryHandlerAgent(BaseAgent):
                 description=(
                     "Book an appointment on Google Calendar. "
                     "Make sure that the appointment is available before booking by calling list_available_slots first."
-                    "Pass the data in the follownig example string format: \n"
-                    "date_str='November 03, 2025', time_str='01:40 PM', user_id='xxxxxx', patient_name=None, patient_age=None, description=None, patient_email=None"
+                    "Pass the data in the follownig example string format (ALL FIELDS REQUIRED. ALWAYS ASK THE USER FOR MISSING FIELDS): \n"
+                    "date_str='November 03, 2025', time_str='01:40 PM', user_id='xxxxxx', patient_name='Ali', patient_age=25, description='Test', patient_email=test@example.com"
                 ),
             ),
             Tool(
