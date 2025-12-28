@@ -228,7 +228,7 @@ class TelegramBot:
 
             elif status == "confirmed" and datetime.fromisoformat(
                 date_time
-            ) - datetime.now() < timedelta(hours=49):
+            ) - datetime.now() < timedelta(hours=4):
                 # Send confirmation email 4 hours before the appointment
                 logger.info(f"Sending confirmation email to {patient_email}")
                 self.email.send_appointment_confirmation(

@@ -1,3 +1,5 @@
+from enum import Enum
+
 import smtplib
 from datetime import datetime
 from email.mime.multipart import MIMEMultipart
@@ -10,15 +12,39 @@ from settings.paths import EMAIL_TEMPLATES_DIR
 logger = get_logger(__name__)
 
 
+class EmailTemplate(Enum):
+    TXT = "appointment_confirmation.txt"
+    HTML = "appointment_confirmation.html"
+
+
 class EmailService:
+
+    SMTP_HOST: str = "smtp.gmail.com"
+    SMTP_PORT: int = 465
+
     def __init__(self, sender_email: str, app_password: str):
+        """
+        Initialize the EmailService with sender email and app password.
+        Args:
+            sender_email (str): The sender's email address.
+            app_password (str): The application-specific password for SMTP authentication.
+        """
         self.sender_email = sender_email
         self.app_password = app_password
         self._server = None
         # self.templates_dir = Path(__file__).parent / "templates"
 
     def _load_template(self, filename: str) -> str:
-        """Load email template from file"""
+        """
+        Load an email template from a file.
+        Args:
+            filename (str): The name of the template file to load.
+        Returns:
+            str: The content of the template file.
+        Raises:
+            FileNotFoundError: If the template file does not exist.
+            Exception: For other errors during file reading.
+        """
         template_path = EMAIL_TEMPLATES_DIR / filename
         try:
             with open(template_path, "r", encoding="utf-8") as f:
@@ -32,8 +58,13 @@ class EmailService:
             raise
 
     def _get_connection(self):
+        """
+        Establish and return an SMTP SSL connection if not already connected.
+        Returns:
+            smtplib.SMTP_SSL: The SMTP server connection.
+        """
         if self._server is None:
-            self._server = smtplib.SMTP_SSL("smtp.gmail.com", 465)
+            self._server = smtplib.SMTP_SSL(self.SMTP_HOST, self.SMTP_PORT)
             self._server.login(self.sender_email, self.app_password)
         return self._server
 
@@ -47,9 +78,22 @@ class EmailService:
         clinic_address: str,
         clinic_phone: str,
     ):
+        """
+        Load and preprocess both text and HTML email templates with appointment details.
+        Args:
+            patient_name (str): Name of the patient.
+            formatted_date (str): Appointment date (formatted).
+            formatted_time (str): Appointment time (formatted).
+            doctor_name (str): Name of the doctor.
+            clinic_name (str): Name of the clinic.
+            clinic_address (str): Address of the clinic.
+            clinic_phone (str): Phone number of the clinic.
+        Returns:
+            tuple: (text_body, html_body) with placeholders replaced, or False on error.
+        """
         try:
-            text_body = self._load_template("appointment_confirmation.txt")
-            html_body = self._load_template("appointment_confirmation.html")
+            text_body = self._load_template(EmailTemplate.TXT)
+            html_body = self._load_template(EmailTemplate.HTML)
         except Exception as e:
             logger.error(f"ERROR: Could not load templates: {e}")
             return False
@@ -74,6 +118,16 @@ class EmailService:
     def _construct_message(
         self, formatted_time: str, receiver_email: str, text_body: str, html_body: str
     ):
+        """
+        Construct a multipart email message with both plain text and HTML content.
+        Args:
+            formatted_time (str): Appointment time (formatted).
+            receiver_email (str): Recipient's email address.
+            text_body (str): Plain text email body.
+            html_body (str): HTML email body.
+        Returns:
+            MIMEMultipart: The constructed email message.
+        """
         message: MIMEMultipart = MIMEMultipart("alternative")
         message["Subject"] = f"Reminder: Your Appointment Today at {formatted_time}"
         message["From"] = self.sender_email
@@ -98,6 +152,19 @@ class EmailService:
         clinic_address: str = "",
         clinic_phone: str = "",
     ):
+        """
+        Send an appointment confirmation email to the specified recipient.
+        Args:
+            receiver_email (str): Recipient's email address.
+            patient_name (str): Name of the patient.
+            appointment_time (str): Appointment time in ISO format.
+            doctor_name (str, optional): Name of the doctor. Defaults to "Dr. Smith".
+            clinic_name (str, optional): Name of the clinic. Defaults to "Healthcare Clinic".
+            clinic_address (str, optional): Address of the clinic. Defaults to empty string.
+            clinic_phone (str, optional): Phone number of the clinic. Defaults to empty string.
+        Returns:
+            bool: True if the email was sent successfully, False otherwise.
+        """
         if not receiver_email:
             logger.error("ERROR: No receiver email provided")
             return False
