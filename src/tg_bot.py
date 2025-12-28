@@ -57,7 +57,7 @@ class TelegramBot:
 
     def register_jobs(self):
         self.application.job_queue.run_repeating(self.send_medical_fact, interval=3600)
-        self.application.job_queue.run_repeating(self.confirm_appointment, interval=10)
+        self.application.job_queue.run_repeating(self.confirm_appointment, interval=1800)
 
     @staticmethod
     def create_keyboard(texts: list[str], callback_data: list[str]):

@@ -92,8 +92,8 @@ class EmailService:
             tuple: (text_body, html_body) with placeholders replaced, or False on error.
         """
         try:
-            text_body = self._load_template(EmailTemplate.TXT)
-            html_body = self._load_template(EmailTemplate.HTML)
+            text_body = self._load_template(EmailTemplate.TXT.value)
+            html_body = self._load_template(EmailTemplate.HTML.value)
         except Exception as e:
             logger.error(f"ERROR: Could not load templates: {e}")
             return False
