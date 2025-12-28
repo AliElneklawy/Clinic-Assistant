@@ -1,7 +1,6 @@
 from uuid import uuid4
 
 from agents.query_handler_agent import QueryHandlerAgent
-from settings.paths import INDEXES_DIR, MED_DATA_FILE
 
 
 def run_agent(agent, user_id):
@@ -20,11 +19,7 @@ def run_agent(agent, user_id):
 
 
 def main():
-    agent = QueryHandlerAgent(
-        content_path=MED_DATA_FILE,
-        index_path=INDEXES_DIR / "index_7ad274e90429ac4.faiss.temp",
-    )
-
+    agent = QueryHandlerAgent()
     run_agent(agent, str(uuid4()))
 
 

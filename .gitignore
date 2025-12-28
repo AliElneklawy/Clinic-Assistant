@@ -18,3 +18,7 @@ token.json
 
 # Logs
 logs/
+
+# Databases
+*.db
+*.db

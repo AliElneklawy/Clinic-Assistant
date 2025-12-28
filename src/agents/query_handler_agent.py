@@ -2,6 +2,7 @@ from langchain.agents import (
     AgentExecutor,
     create_react_agent,
 )
+from langchain.schema import HumanMessage
 from langchain.tools import Tool
 from langchain_cohere import ChatCohere
 from langchain_community.chat_message_histories import SQLChatMessageHistory
@@ -9,8 +10,9 @@ from langchain_core.prompts import PromptTemplate
 from langchain_core.runnables.history import RunnableWithMessageHistory
 
 from agents.base_agent import BaseAgent
-from agents.tools import AgentTools
-from rag.rag_system import RAGSystem
+
+# from agents.tools import AgentTools
+from container import create_agent_tools
 from scripts import create_folder, get_api_key
 from settings import agent_config, prompts
 from settings.logger import get_logger
@@ -20,7 +22,7 @@ logger = get_logger(__name__)
 
 
 class QueryHandlerAgent(BaseAgent):
-    def __init__(self, content_path, index_path, rerank: bool = True):
+    def __init__(self):
         """
         Initialize the QueryHandlerAgent with RAG system and LLM.
 
@@ -35,15 +37,8 @@ class QueryHandlerAgent(BaseAgent):
         logger.info("Initializing LLM...")
         self.llm = ChatCohere(cohere_api_key=get_api_key.get_key("COHERE"))
 
-        logger.info("Initializing RAG system...")
-        self.rag = RAGSystem(
-            content_path=content_path,
-            index_path=index_path,
-            rerank=rerank,
-        )
-
         logger.info("Initializing tools...")
-        self.agent_tools = AgentTools(rag=self.rag)
+        self.agent_tools = create_agent_tools()  # AgentTools(rag=self.rag)
 
         super().__init__()
 
@@ -96,8 +91,8 @@ class QueryHandlerAgent(BaseAgent):
                 description=(
                     "Book an appointment on Google Calendar. "
                     "Make sure that the appointment is available before booking by calling list_available_slots first."
-                    "Pass the data in the follownig example string format: \n"
-                    "date_str='November 03, 2025', time_str='01:40 PM', patient_name=None, patient_age=None, description=None, patient_email=None"
+                    "Pass the data in the follownig example string format (ALL FIELDS REQUIRED. ALWAYS ASK THE USER FOR MISSING FIELDS): \n"
+                    "date_str='November 03, 2025', time_str='01:40 PM', user_id='xxxxxx', patient_name='Ali', patient_age=25, description='Test', patient_email=test@example.com"
                 ),
             ),
             Tool(
@@ -114,7 +109,9 @@ class QueryHandlerAgent(BaseAgent):
                 description=(
                     "Classify a patient's diabetes based on various factors. "
                     "Always mention the probability of being diabetic and the final diagnosis. "
-                    "Pass the data in the follownig example string format (all the fields are MANDATORY): \n"
+                    "The following fields are MANDATORY: gender, age, hypertension, heart_disease, smoking_history, bmi, HbA1c_level, blood_glucose_level. "
+                    "If any of the fields is missing, ask the user to provide it. "
+                    "Pass the data in the follownig example string format: \n"
                     "gender='Male', age=30, hypertension='yes', heart_disease='no', smoking_history='never', bmi=25.0, HbA1c_level=5.5, blood_glucose_level=120"
                 ),
             ),
@@ -164,18 +161,19 @@ class QueryHandlerAgent(BaseAgent):
         Returns:
             The agent's response after processing the query and using available tools
         """
-        # from langchain.schema import HumanMessage
-        # h = self.get_history("93979a18-8cac-404e-a16e-12bf931ac89c")
-        # output = "\n".join(
-        #     f"{'Human' if isinstance(msg, HumanMessage) else 'AI'}: {msg.content}"
-        #     for msg in h.messages[-4:]
-        # )
-        # print(output)
-        # exit()
+        query = f"[User ID: {user_id}\n{query}"
+
+        h = self.get_history(user_id)
+        last_n_messages = "\n".join(
+            f"{'Human' if isinstance(msg, HumanMessage) else 'AI'}: {msg.content}"
+            for msg in h.messages[-agent_config.LAST_N_MESSAGES :]
+        )
+
         result = self.agent_with_history.invoke(
-            {"input": query, "history": self.get_history(user_id)},
+            {"input": query, "history": last_n_messages},
             config={"configurable": {"session_id": user_id}},
         )
+
         return result
 
 

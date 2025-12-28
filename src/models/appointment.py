@@ -1,5 +1,4 @@
 from datetime import date, datetime, time
-from typing import Optional
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -7,10 +6,11 @@ from pydantic import BaseModel, Field, field_validator
 class BookAppointmentInput(BaseModel):
     date_str: date = Field(..., description="Appointment date")
     time_str: time = Field(..., description="Appointment time")
-    patient_name: Optional[str] = Field(None, description="Name of the patient")
-    patient_age: Optional[int] = Field(None, description="Age of the patient")
-    description: Optional[str] = Field(None, description="Reason for visit")
-    patient_email: Optional[str] = Field(None, description="Patient email")
+    user_id: str = Field(..., description="User ID")
+    patient_name: str = Field(..., description="Name of the patient")
+    patient_age: int = Field(..., description="Age of the patient")
+    description: str = Field(..., description="Reason for visit")
+    patient_email: str = Field(..., description="Patient email")
 
     # Normalize date formats like "November 03, 2025" → date(2025, 11, 3)
     @field_validator("date_str", mode="before")
