@@ -13,7 +13,7 @@ class Scheduler:
         if self._running:
             return
 
-        schedule.every(0.5).minutes.do(self.run)
+        schedule.every(1).minutes.do(self.run)
         self._thread = Thread(target=self._run_scheduler, daemon=False)
         self._running = True
         self._thread.start()
