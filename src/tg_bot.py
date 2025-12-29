@@ -28,13 +28,13 @@ logger = get_logger(__name__)
 
 class TelegramBot:
     def __init__(
-        self, agent: QueryHandlerAgent, db: DatabaseOpsService, email: EmailService
+        self, agent: QueryHandlerAgent, db: DatabaseOpsService
     ):
         self.admins = json.loads(os.getenv("ADMINS"))
 
         self.agent = agent
         self.db = db
-        self.email = email
+        # self.email = email
 
         self.application = (
             Application.builder()
@@ -181,9 +181,9 @@ class TelegramBot:
             _,
             user_id,
             event_id,
-            patient_name,
             _,
-            patient_email,
+            _,
+            _,
             date_time,
             _,
             status,
@@ -226,21 +226,21 @@ class TelegramBot:
                     condition=f"event_id = '{event_id}'",
                 )
 
-            elif status == "confirmed" and datetime.fromisoformat(
-                date_time
-            ) - datetime.now() < timedelta(hours=4):
-                # Send confirmation email 4 hours before the appointment
-                logger.info(f"Sending confirmation email to {patient_email}")
-                self.email.send_appointment_confirmation(
-                    patient_email, patient_name, date_time
-                )
+            # elif status == "confirmed" and datetime.fromisoformat(
+            #     date_time
+            # ) - datetime.now() < timedelta(hours=4):
+            #     # Send confirmation email 4 hours before the appointment
+            #     logger.info(f"Sending confirmation email to {patient_email}")
+            #     self.email.send_appointment_confirmation(
+            #         patient_email, patient_name, date_time
+            #     )
 
-                self.db.update_field(
-                    table_name="appointments",
-                    field_name="email_sent",
-                    value=True,
-                    condition=f"event_id = '{event_id}'",
-                )
+            #     self.db.update_field(
+            #         table_name="appointments",
+            #         field_name="email_sent",
+            #         value=True,
+            #         condition=f"event_id = '{event_id}'",
+            #     )
 
     def run(self):
         logger.info("========= Bot is running =========")
@@ -250,11 +250,11 @@ class TelegramBot:
 if __name__ == "__main__":
     agent = QueryHandlerAgent()
     db = DatabaseOpsService()
-    email = EmailService(
-        sender_email=get_api_key.get_key("SENDER_EMAIL"),
-        app_password=get_api_key.get_key("GMAIL_APP_PASSWORD"),
-    )
-    bot = TelegramBot(agent, db, email)
+    # email = EmailService(
+    #     sender_email=get_api_key.get_key("SENDER_EMAIL"),
+    #     app_password=get_api_key.get_key("GMAIL_APP_PASSWORD"),
+    # )
+    bot = TelegramBot(agent, db)
 
     bot.run()
 

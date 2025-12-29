@@ -1,13 +1,21 @@
+from datetime import timedelta
 from enum import Enum
+import sys 
+from pathlib import Path
 
-import smtplib
 from datetime import datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+import smtplib
+
+project_root = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(project_root))
 
 from scripts import get_api_key
+from services.database.database_service import DatabaseOpsService
 from settings.logger import get_logger
 from settings.paths import EMAIL_TEMPLATES_DIR
+from utils.scheduler import Scheduler
 
 logger = get_logger(__name__)
 
@@ -17,22 +25,23 @@ class EmailTemplate(Enum):
     HTML = "appointment_confirmation.html"
 
 
-class EmailService:
+class EmailService(Scheduler):
 
     SMTP_HOST: str = "smtp.gmail.com"
     SMTP_PORT: int = 465
 
-    def __init__(self, sender_email: str, app_password: str):
+    def __init__(self, sender_email: str, app_password: str, db: DatabaseOpsService):
         """
         Initialize the EmailService with sender email and app password.
         Args:
             sender_email (str): The sender's email address.
             app_password (str): The application-specific password for SMTP authentication.
         """
+        super().__init__()
         self.sender_email = sender_email
         self.app_password = app_password
+        self.db = db
         self._server = None
-        # self.templates_dir = Path(__file__).parent / "templates"
 
     def _load_template(self, filename: str) -> str:
         """
@@ -67,6 +76,16 @@ class EmailService:
             self._server = smtplib.SMTP_SSL(self.SMTP_HOST, self.SMTP_PORT)
             self._server.login(self.sender_email, self.app_password)
         return self._server
+
+    def _close_connection(self):
+        """Close the SMTP connection if it exists."""
+        if self._server is not None:
+            try:
+                self._server.quit()
+            except Exception as e:
+                logger.error(f"Error closing SMTP connection: {e}")
+            finally:
+                self._server = None
 
     def _load_preprocess_templates(
         self,
@@ -202,25 +221,63 @@ class EmailService:
             logger.error(f"UNEXPECTED ERROR: {e}")
             return False
 
+    def run(self):
+        logger.info("Running email service scheduled task...")
+        
+        appointments = self.db.get_appointments()
+        for (
+            _,
+            _,
+            event_id,
+            patient_name,
+            _,
+            patient_email,
+            date_time,
+            _,
+            status,
+            _,
+            email_sent,
+        ) in appointments:
+
+            if email_sent:
+                continue
+
+            if status != "cancelled" and \
+                datetime.fromisoformat(date_time) - datetime.now() < timedelta(hours=4):
+
+                self.send_appointment_confirmation(patient_email, patient_name, date_time)
+
+                self.db.update_field(
+                    table_name="appointments",
+                    field_name="email_sent",
+                    value=True,
+                    condition=f"event_id = '{event_id}'",
+                )
+
+    def stop(self):
+        """Stop the scheduler and close SMTP connection."""
+        super().stop()
+        self._close_connection()
 
 if __name__ == "__main__":
     from datetime import timedelta
+    import threading
 
-    email = EmailService(
+    db = DatabaseOpsService()
+    email_service = EmailService(
         sender_email=get_api_key.get_key("SENDER_EMAIL"),
         app_password=get_api_key.get_key("GMAIL_APP_PASSWORD"),
+        db=db,
     )
 
-    appointment_time = datetime.now() + timedelta(hours=4)
+    logger.info("Starting email service in background mode...")
+    email_service.start()
 
-    result = email.send_appointment_confirmation(
-        receiver_email="ali.mostafa.elneklawy@gmail.com",
-        patient_name="John Doe",
-        appointment_time=appointment_time,
-        doctor_name="Dr. Sarah Johnson",
-        clinic_name="City Health Clinic",
-        clinic_address="123 Main Street, Suite 200, City, State 12345",
-        clinic_phone="(555) 123-4567",
-    )
-
-    logger.info(f"\nFinal result: {'SUCCESS' if result else 'FAILED'}")
+    try:
+        logger.info("Email service is running. Press Ctrl+C to stop.")
+        while True:
+            threading.Event().wait(1)
+    except KeyboardInterrupt:
+        logger.info("\nShutting down email service...")
+        email_service.stop()
+        logger.info("Email service stopped.")
