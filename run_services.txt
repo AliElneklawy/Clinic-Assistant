@@ -1,0 +1,4 @@
+From root...
+
+tg: uv run .\src\tg_bot.py
+email: uv run .\src\services\email\email_service.py
