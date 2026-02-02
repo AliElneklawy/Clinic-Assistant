@@ -1,0 +1,9 @@
+services:
+  telegram-bot:
+    build: .
+    command: uv run .\src\tg_bot.py
+    restart: unless-stopped
+  email_service:
+    build: .
+    command: uv run .\src\services\email\email_service.py
+    restart: unless-stopped
