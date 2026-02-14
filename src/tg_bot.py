@@ -16,10 +16,7 @@ from telegram.ext import (
 
 from agents.query_handler_agent import QueryHandlerAgent
 from scripts import get_api_key
-
-# from services.calendar.calendar_service import CalendarService
 from services.database.database_service import DatabaseOpsService
-from services.email.email_service import EmailService
 from settings.logger import get_logger
 
 load_dotenv()
@@ -27,14 +24,11 @@ logger = get_logger(__name__)
 
 
 class TelegramBot:
-    def __init__(
-        self, agent: QueryHandlerAgent, db: DatabaseOpsService
-    ):
+    def __init__(self, agent: QueryHandlerAgent, db: DatabaseOpsService):
         self.admins = json.loads(os.getenv("ADMINS"))
 
         self.agent = agent
         self.db = db
-        # self.email = email
 
         self.application = (
             Application.builder()
@@ -57,7 +51,9 @@ class TelegramBot:
 
     def register_jobs(self):
         self.application.job_queue.run_repeating(self.send_medical_fact, interval=3600)
-        self.application.job_queue.run_repeating(self.confirm_appointment, interval=1800)
+        self.application.job_queue.run_repeating(
+            self.confirm_appointment, interval=1800
+        )
 
     @staticmethod
     def create_keyboard(texts: list[str], callback_data: list[str]):
@@ -226,22 +222,6 @@ class TelegramBot:
                     condition=f"event_id = '{event_id}'",
                 )
 
-            # elif status == "confirmed" and datetime.fromisoformat(
-            #     date_time
-            # ) - datetime.now() < timedelta(hours=4):
-            #     # Send confirmation email 4 hours before the appointment
-            #     logger.info(f"Sending confirmation email to {patient_email}")
-            #     self.email.send_appointment_confirmation(
-            #         patient_email, patient_name, date_time
-            #     )
-
-            #     self.db.update_field(
-            #         table_name="appointments",
-            #         field_name="email_sent",
-            #         value=True,
-            #         condition=f"event_id = '{event_id}'",
-            #     )
-
     def run(self):
         logger.info("========= Bot is running =========")
         self.application.run_polling()
@@ -250,56 +230,6 @@ class TelegramBot:
 if __name__ == "__main__":
     agent = QueryHandlerAgent()
     db = DatabaseOpsService()
-    # email = EmailService(
-    #     sender_email=get_api_key.get_key("SENDER_EMAIL"),
-    #     app_password=get_api_key.get_key("GMAIL_APP_PASSWORD"),
-    # )
     bot = TelegramBot(agent, db)
 
     bot.run()
-
-
-# TODO:
-# 🏥 1. Patient & Appointment Management
-
-# View My Appointments – Let patients list their upcoming bookings.
-# → e.g., /my_appointments
-# [DONE] Reminders / Notifications – Schedule automatic reminders before appointments using JobQueue.
-# Reschedule Flow – Implement a guided conversation to change date/time easily.
-# Confirmations – Send confirmation messages (and maybe email) after booking/canceling.
-
-# ⚕️ 3. Medical Assistant Features
-
-# Expand beyond diabetes:
-# Symptom Checker – Collect symptoms and suggest possible conditions.
-# Medication Reminders – Allow users to set reminders for their meds.
-# Vitals Tracker – Log and visualize user vitals (blood sugar, pressure, etc.) over time.
-# Health Tips – Send daily/weekly medical tips from a curated dataset or RAG index.
-
-# 🧠 4. AI / Data Features
-
-# Summarization – Summarize long medical documents or discharge summaries.
-# Voice Input / Output – Add speech-to-text and text-to-speech support for accessibility.
-# Image Analysis – Let users upload reports (e.g., blood tests) and summarize results.
-
-# 👩‍💼 5. Admin Tools
-
-# Admin Dashboard – View bookings, delete or confirm them.
-# Usage Logs / Analytics – Track number of interactions, most common queries, etc.
-# Backup and Restore – Save and restore the FAISS index and knowledge base.
-
-# 🔒 6. Security & Compliance
-
-# For real-world use, this is critical:
-# Patient Verification – OTP/email confirmation before booking.
-
-# ☁️ 7. Integration Ideas
-
-# Email / SMS Notifications – Send confirmations via external channels.
-
-# 🧩 8. Fun or Helpful Extras
-
-# Health Quiz or Tips of the Day – “Did you know?” facts or simple wellness quizzes.
-# Feedback System – “How was your visit today?” to collect ratings.
-# Emergency Contact Shortcut – Quick access to emergency numbers.
-# Location Sharing – Let users send location to find the nearest clinic branch.
