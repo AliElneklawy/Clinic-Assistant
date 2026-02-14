@@ -1,5 +1,5 @@
+import time
 from threading import Thread
-import time 
 
 import schedule
 
@@ -8,7 +8,7 @@ class Scheduler:
     def __init__(self):
         self._thread = None
         self._running = False
-    
+
     def start(self):
         if self._running:
             return
@@ -17,7 +17,7 @@ class Scheduler:
         self._thread = Thread(target=self._run_scheduler, daemon=False)
         self._running = True
         self._thread.start()
-    
+
     def stop(self):
         if self._running:
             schedule.clear()

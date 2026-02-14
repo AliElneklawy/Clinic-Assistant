@@ -76,7 +76,7 @@ def create_agent_tools():
     email_service = EmailService(
         sender_email=get_api_key.get_key("SENDER_EMAIL"),
         app_password=get_api_key.get_key("GMAIL_APP_PASSWORD"),
-        db=db_service
+        db=db_service,
     )
 
     return AgentTools(
