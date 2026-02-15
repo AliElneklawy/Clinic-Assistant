@@ -17,7 +17,7 @@ from dotenv import load_dotenv
 from googleapiclient.discovery import build
 from langchain_tavily import TavilySearch
 
-from agents.tools import AgentTools
+from src.agents.tools import AgentTools
 from rag.rag_system import RAGSystem
 from scripts import get_api_key
 from scripts.auth_calendar import authenticate_calendar

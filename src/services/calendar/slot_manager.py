@@ -1,7 +1,7 @@
 import datetime
 from typing import List, Tuple
 
-from settings import clinic_config
+from src.settings import clinic_config
 
 
 class SlotManager:

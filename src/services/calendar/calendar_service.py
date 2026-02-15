@@ -3,13 +3,13 @@ import datetime
 from googleapiclient.discovery import Resource
 from googleapiclient.errors import HttpError
 
-from models.appointment import BookAppointmentInput
-from scripts import unpack_data
-from services.calendar.event_builder import EventBuilder
-from services.calendar.slot_manager import SlotManager
-from services.database.database_service import DatabaseOpsService
-from settings import clinic_config
-from settings.logger import get_logger
+from src.models.appointment import BookAppointmentInput
+from src.scripts import unpack_data
+from src.services.calendar.event_builder import EventBuilder
+from src.services.calendar.slot_manager import SlotManager
+from src.services.database.database_service import DatabaseOpsService
+from src.settings import clinic_config
+from src.settings.logger import get_logger
 
 logger = get_logger(__name__)
 

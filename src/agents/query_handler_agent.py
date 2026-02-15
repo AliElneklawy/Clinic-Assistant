@@ -9,14 +9,13 @@ from langchain_community.chat_message_histories import SQLChatMessageHistory
 from langchain_core.prompts import PromptTemplate
 from langchain_core.runnables.history import RunnableWithMessageHistory
 
-from agents.base_agent import BaseAgent
-
-# from agents.tools import AgentTools
-from container import create_agent_tools
+from src.agents.base_agent import BaseAgent
+from src.container import create_agent_tools
 from scripts import create_folder, get_api_key
 from settings import agent_config, prompts
 from settings.logger import get_logger
 from settings.paths import DATA_DIR
+
 
 logger = get_logger(__name__)
 

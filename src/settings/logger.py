@@ -1,8 +1,8 @@
 import logging
 import logging.handlers
 
-from scripts import create_folder
-from settings.paths import LOGS_DIR
+from src.scripts import create_folder
+from src.settings.paths import LOGS_DIR
 
 logging.basicConfig(
     level=logging.INFO,

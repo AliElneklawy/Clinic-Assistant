@@ -14,13 +14,13 @@ from telegram.ext import (
     filters,
 )
 
-from agents.query_handler_agent import QueryHandlerAgent
-from scripts import get_api_key
+from src.agents.query_handler_agent import QueryHandlerAgent
+from src.scripts import get_api_key
 
 # from services.calendar.calendar_service import CalendarService
-from services.database.database_service import DatabaseOpsService
-from services.email.email_service import EmailService
-from settings.logger import get_logger
+from src.services.database.database_service import DatabaseOpsService
+from src.services.email.email_service import EmailService
+from src.settings.logger import get_logger
 
 load_dotenv()
 logger = get_logger(__name__)

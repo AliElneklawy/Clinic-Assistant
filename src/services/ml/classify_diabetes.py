@@ -59,31 +59,34 @@ class ClassifyDiabetesService:
 
         return df
 
-    def classify_diabetes(self, data: str):
+    def classify_diabetes(self, data: str | ClassifyDiabetesInput):
         """
         Classify a patient's diabetes based on various factors.
         returns a string with the probability of the patient being diabetic and the final diagnosis.
         """
-        (
-            gender,
-            age,
-            hypertension,
-            heart_disease,
-            smoking_history,
-            bmi,
-            HbA1c_level,
-            blood_glucose_level,
-        ) = unpack_data.unpack(data, ClassifyDiabetesInput)
+        # (
+        #     gender,
+        #     age,
+        #     hypertension,
+        #     heart_disease,
+        #     smoking_history,
+        #     bmi,
+        #     HbA1c_level,
+        #     blood_glucose_level,
+        # ) = unpack_data.unpack(data, ClassifyDiabetesInput)
+
+        if isinstance(data, str):
+            data = unpack_data.unpack(data, ClassifyDiabetesInput)
 
         df = self.preprocess(
-            gender,
-            age,
-            hypertension,
-            heart_disease,
-            smoking_history,
-            bmi,
-            HbA1c_level,
-            blood_glucose_level,
+            data.gender,
+            data.age,
+            data.hypertension,
+            data.heart_disease,
+            data.smoking_history,
+            data.bmi,
+            data.HbA1c_level,
+            data.blood_glucose_level,
         )
 
         prediction = self.model.predict(df)

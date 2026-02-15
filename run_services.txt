@@ -1,4 +1,6 @@
 From root...
 
-tg: uv run .\src\tg_bot.py
-email: uv run .\src\services\email\email_service.py
+cli: uv run python -m src.cli
+tg: uv run python -m src.tg_bot
+email: uv run python -m src.services.email.email_service
+api: uvicorn src.api.main:app
