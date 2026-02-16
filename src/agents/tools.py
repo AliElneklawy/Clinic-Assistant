@@ -2,11 +2,11 @@ from typing import TypeVar
 
 from pydantic import BaseModel
 
+from settings.logger import get_logger
 from src.services.calendar.calendar_service import CalendarService
 from src.services.email.email_service import EmailService
 from src.services.ml.classify_diabetes import ClassifyDiabetesService
 from src.services.search.hybrid_search_service import HybridSearchService
-from settings.logger import get_logger
 
 logger = get_logger(__name__)
 

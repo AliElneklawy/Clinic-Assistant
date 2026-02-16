@@ -1,8 +1,8 @@
 import numpy as np
 import pandas as pd
 
-from models.classify_diabetes import ClassifyDiabetesInput
-from scripts import unpack_data
+from src.models.classify_diabetes import ClassifyDiabetesInput
+from src.scripts import unpack_data
 
 
 class ClassifyDiabetesService:
@@ -92,4 +92,4 @@ class ClassifyDiabetesService:
         prediction = self.model.predict(df)
         prediction_proba = self.model.predict_proba(df)[0][1]
 
-        return f"Probability of being diabetic: {(prediction_proba * 100).round(2)}%.\Diagnosis: {'diabetic' if prediction == 1 else 'non-diabetic'}."
+        return f"Probability of being diabetic: {(prediction_proba * 100).round(2)}%.\nDiagnosis: {'diabetic' if prediction == 1 else 'non-diabetic'}."

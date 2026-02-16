@@ -27,9 +27,7 @@ logger = get_logger(__name__)
 
 
 class TelegramBot:
-    def __init__(
-        self, agent: QueryHandlerAgent, db: DatabaseOpsService
-    ):
+    def __init__(self, agent: QueryHandlerAgent, db: DatabaseOpsService):
         self.admins = json.loads(os.getenv("ADMINS"))
 
         self.agent = agent
@@ -57,7 +55,9 @@ class TelegramBot:
 
     def register_jobs(self):
         self.application.job_queue.run_repeating(self.send_medical_fact, interval=3600)
-        self.application.job_queue.run_repeating(self.confirm_appointment, interval=1800)
+        self.application.job_queue.run_repeating(
+            self.confirm_appointment, interval=1800
+        )
 
     @staticmethod
     def create_keyboard(texts: list[str], callback_data: list[str]):

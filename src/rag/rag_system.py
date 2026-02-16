@@ -11,10 +11,10 @@ import html2text
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
 
-from embeddings.cohere_embedding import CohereEmbedding
-from scripts import get_api_key, write_to_file
-from settings.logger import get_logger
-from settings.rag_config import *
+from src.embeddings.cohere_embedding import CohereEmbedding
+from src.scripts import get_api_key, write_to_file
+from src.settings.logger import get_logger
+from src.settings.rag_config import *
 
 logger = get_logger(__name__)
 

@@ -17,21 +17,21 @@ from dotenv import load_dotenv
 from googleapiclient.discovery import build
 from langchain_tavily import TavilySearch
 
+from src.rag.rag_system import RAGSystem
+from src.scripts import get_api_key
+from src.scripts.auth_calendar import authenticate_calendar
+from src.services.calendar.calendar_service import CalendarService
+from src.services.calendar.event_builder import EventBuilder
+from src.services.calendar.slot_manager import SlotManager
+from src.services.database.database_service import DatabaseOpsService
+from src.services.email.email_service import EmailService
+from src.services.ml.classify_diabetes import ClassifyDiabetesService
+from src.services.search.database_search_service import DatabaseSearchService
+from src.services.search.hybrid_search_service import HybridSearchService
+from src.services.search.web_search_service import WebSearchService
+from src.settings import agent_config
+from src.settings.paths import DIABETES_MODEL_PATH, INDEXES_DIR, MED_DATA_FILE
 from src.agents.tools import AgentTools
-from rag.rag_system import RAGSystem
-from scripts import get_api_key
-from scripts.auth_calendar import authenticate_calendar
-from services.calendar.calendar_service import CalendarService
-from services.calendar.event_builder import EventBuilder
-from services.calendar.slot_manager import SlotManager
-from services.database.database_service import DatabaseOpsService
-from services.email.email_service import EmailService
-from services.ml.classify_diabetes import ClassifyDiabetesService
-from services.search.database_search_service import DatabaseSearchService
-from services.search.hybrid_search_service import HybridSearchService
-from services.search.web_search_service import WebSearchService
-from settings import agent_config
-from settings.paths import DIABETES_MODEL_PATH, INDEXES_DIR, MED_DATA_FILE
 
 load_dotenv()
 
@@ -76,7 +76,7 @@ def create_agent_tools():
     email_service = EmailService(
         sender_email=get_api_key.get_key("SENDER_EMAIL"),
         app_password=get_api_key.get_key("GMAIL_APP_PASSWORD"),
-        db=db_service
+        db=db_service,
     )
 
     return AgentTools(

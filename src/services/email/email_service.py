@@ -1,12 +1,10 @@
-from datetime import timedelta
-from enum import Enum
-import sys 
-from pathlib import Path
-
-from datetime import datetime
+import smtplib
+import sys
+from datetime import datetime, timedelta
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-import smtplib
+from enum import Enum
+from pathlib import Path
 
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
@@ -26,7 +24,6 @@ class EmailTemplate(Enum):
 
 
 class EmailService(Scheduler):
-
     SMTP_HOST: str = "smtp.gmail.com"
     SMTP_PORT: int = 465
 
@@ -223,7 +220,7 @@ class EmailService(Scheduler):
 
     def run(self):
         logger.info("Running email service scheduled task...")
-        
+
         appointments = self.db.get_appointments()
         for (
             _,
@@ -238,14 +235,15 @@ class EmailService(Scheduler):
             _,
             email_sent,
         ) in appointments:
-
             if email_sent:
                 continue
 
-            if status != "cancelled" and \
-                datetime.fromisoformat(date_time) - datetime.now() < timedelta(hours=4):
-
-                self.send_appointment_confirmation(patient_email, patient_name, date_time)
+            if status != "cancelled" and datetime.fromisoformat(
+                date_time
+            ) - datetime.now() < timedelta(hours=4):
+                self.send_appointment_confirmation(
+                    patient_email, patient_name, date_time
+                )
 
                 self.db.update_field(
                     table_name="appointments",
@@ -259,9 +257,10 @@ class EmailService(Scheduler):
         super().stop()
         self._close_connection()
 
+
 if __name__ == "__main__":
-    from datetime import timedelta
     import threading
+    from datetime import timedelta
 
     db = DatabaseOpsService()
     email_service = EmailService(

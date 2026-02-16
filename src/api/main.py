@@ -8,10 +8,11 @@ from .endpoints import router
 
 load_dotenv()
 
-app = FastAPI()
+app = FastAPI(
+    title="Clinic AI API", 
+    description="Medical AI assistant API",
+    version="2.0"
+)
 
 app.include_router(router)
-app.add_middleware(
-    SessionMiddleware, 
-    secret_key=os.getenv("SESSION_SECRET_KEY")
-    )
+app.add_middleware(SessionMiddleware, secret_key=os.getenv("SESSION_SECRET_KEY"))

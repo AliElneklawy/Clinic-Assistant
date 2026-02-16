@@ -80,7 +80,7 @@ class CalendarService:
 
         return slots
 
-    def book_appointment(self, data: str) -> str:
+    def book_appointment(self, data: str | BookAppointmentInput) -> str:
         """
         Book an appointment on Google Calendar.
 
@@ -91,20 +91,23 @@ class CalendarService:
         Returns:
             Confirmation message containing the event ID and a link to the event in Google Calendar.
         """
-        (
-            appointment_date,
-            appointment_time,
-            user_id,
-            patient_name,
-            patient_age,
-            description,
-            patient_email,
-        ) = unpack_data.unpack(data, BookAppointmentInput)
+        # (
+        #     appointment_date,
+        #     appointment_time,
+        #     user_id,
+        #     patient_name,
+        #     patient_age,
+        #     description,
+        #     patient_email,
+        # ) = unpack_data.unpack(data, BookAppointmentInput)
+
+        if isinstance(data, str):
+            data = unpack_data.unpack(data, BookAppointmentInput)
 
         try:
             # Verify the slot is still available
             start_datetime = datetime.datetime.combine(
-                appointment_date, appointment_time
+                data.date_str, data.time_str
             )
             end_datetime = start_datetime + datetime.timedelta(
                 minutes=clinic_config.SLOT_DURATION_MINUTES
@@ -113,13 +116,13 @@ class CalendarService:
             # Get existing events to check availability
             time_min = (
                 datetime.datetime.combine(
-                    appointment_date, datetime.time(0, 0)
+                    data.date_str, datetime.time(0, 0)
                 ).isoformat()
                 + "Z"
             )
             time_max = (
                 datetime.datetime.combine(
-                    appointment_date, datetime.time(23, 59)
+                    data.date_str, datetime.time(23, 59)
                 ).isoformat()
                 + "Z"
             )
@@ -142,14 +145,14 @@ class CalendarService:
             if not self.slot_manager._is_slot_available(
                 start_datetime, end_datetime, existing_events
             ):
-                return f"The time slot at {appointment_time.strftime('%I:%M %p')} on {appointment_date.strftime('%B %d, %Y')} is no longer available. Please choose another time."
+                return f"The time slot at {data.time_str.strftime('%I:%M %p')} on {data.date_str.strftime('%B %d, %Y')} is no longer available. Please choose another time."
 
             # Create the event
             event = self.event_builder._create_event(
-                patient_name,
-                patient_age,
-                patient_email,
-                description,
+                data.patient_name,
+                data.patient_age,
+                data.patient_email,
+                data.description,
                 start_datetime,
                 end_datetime,
             )
@@ -159,34 +162,34 @@ class CalendarService:
                 .insert(
                     calendarId=clinic_config.CALENDAR_ID,
                     body=event,
-                    sendUpdates="all" if patient_email else "none",
+                    sendUpdates="all" if data.patient_email else "none",
                 )
                 .execute()
             )
 
             add_to_calendar_link = self.event_builder._make_add_to_calendar_link(
-                title=f"Appointment: {patient_name}",
+                title=f"Appointment: {data.patient_name}",
                 start_datetime=start_datetime,
                 end_datetime=end_datetime,
-                details=description,
-                patient_email=patient_email,
+                details=data.description,
+                patient_email=data.patient_email,
             )
 
             self.db.insert_appointment(
-                user_id,
+                data.user_id,
                 created_event["id"],
-                patient_name,
-                patient_age,
-                patient_email,
+                data.patient_name,
+                data.patient_age,
+                data.patient_email,
                 start_datetime,
-                description,
+                data.description,
                 "scheduled",
             )
             logger.info("Successfuly added appointment details to the database.")
 
             result = (
-                f"Appointment booked successfully for {patient_name or 'Patient'} on "
-                f"{appointment_date.strftime('%B %d, %Y')} at {appointment_time.strftime('%I:%M %p')}. "
+                f"Appointment booked successfully for {data.patient_name or 'Patient'} on "
+                f"{data.date_str.strftime('%B %d, %Y')} at {data.time_str.strftime('%I:%M %p')}. "
                 f"Event ID: {created_event['id']}. Use this ID to cancel or reschedule the appointment. "
                 f"Use this link to add the event to your calendar: {add_to_calendar_link}"
             )
