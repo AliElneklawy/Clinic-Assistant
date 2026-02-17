@@ -3,7 +3,7 @@ from uuid import uuid4
 from src.agents.query_handler_agent import QueryHandlerAgent
 
 
-def run_agent(agent, user_id):
+def run_agent(agent: QueryHandlerAgent, user_id):
     while True:
         query = input("User: ").strip()
         if not query:
@@ -13,7 +13,7 @@ def run_agent(agent, user_id):
 
         try:
             response = agent.run(query, user_id)
-            print("Assistant:", response["output"])
+            print("Assistant:", response)
         except Exception as e:
             print(f"Error: {e}")
 

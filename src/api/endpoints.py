@@ -36,7 +36,7 @@ def chat(
 ):
     try:
         response = agent.run(msg.message, user_id)
-        return JSONResponse(status_code=200, content=response["output"])
+        return JSONResponse(status_code=200, content=response)
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid input")
     except Exception:

@@ -1,3 +1,5 @@
+import os
+
 from langchain.agents import (
     AgentExecutor,
     create_react_agent,
@@ -8,6 +10,8 @@ from langchain_cohere import ChatCohere
 from langchain_community.chat_message_histories import SQLChatMessageHistory
 from langchain_core.prompts import PromptTemplate
 from langchain_core.runnables.history import RunnableWithMessageHistory
+from redisvl.extensions.cache.llm import SemanticCache
+from redisvl.utils.vectorize import CohereTextVectorizer
 
 from src.agents.base_agent import BaseAgent
 from src.container import create_agent_tools
@@ -37,6 +41,18 @@ class QueryHandlerAgent(BaseAgent):
 
         logger.info("Initializing tools...")
         self.agent_tools = create_agent_tools()  # AgentTools(rag=self.rag)
+
+        logger.info("Initializing Redis cache...")
+        self.cache = SemanticCache(
+            name="MediCare_AI",
+            distance_threshold=0.2,
+            redis_url=os.getenv("REDIS_URL"),
+            ttl=3600*4,
+            vectorizer=CohereTextVectorizer(   # See the note about initializing the vectorizer at the last line
+                model="embed-multilingual-v3.0",
+                api_config={"api_key": get_api_key.get_key("COHERE")},
+            ),
+        )
 
         super().__init__()
 
@@ -159,7 +175,12 @@ class QueryHandlerAgent(BaseAgent):
         Returns:
             The agent's response after processing the query and using available tools
         """
-        query = f"[User ID: {user_id}\n{query}"
+        if response := self.cache.check(prompt=query):
+            logger.info("Cache hit. Responding from cache...")
+            return response[0]['response']
+
+        logger.info("Cache miss. Invoking LLM...")
+        query_with_id = f"[User ID: {user_id}]\n{query}"
 
         h = self.get_history(user_id)
         last_n_messages = "\n".join(
@@ -168,17 +189,30 @@ class QueryHandlerAgent(BaseAgent):
         )
 
         result = self.agent_with_history.invoke(
-            {"input": query, "history": last_n_messages},
+            {"input": query_with_id, "history": last_n_messages},
             config={"configurable": {"session_id": user_id}},
         )
 
-        return result
+        self.cache.store(prompt=query, response=result["output"])
+
+        return result["output"]
 
 
 if __name__ == "__main__":
     agent = QueryHandlerAgent()
     result = agent.run(
-        "I have a really bad headache. What should I do?", "test_user_id"
+        "How can I treat my headache?", "test_user_id2"
     )
 
     print(result)
+
+
+# Regarding the initialization process of the vectorizer. I kept getting the following errors:
+#   1. TypeError: Must pass in a str value for cohere embedding input_type. See https://docs.cohere.com/reference/embed
+#   2. TypeError: Client.__init__() got an unexpected keyword argument 'input_type'
+# The second error occured when I tried to pass the 'input_type' arg CohereTextVectorizer.
+# So I had to change line 236 from 
+#                               `input_type = kwargs.pop("input_type", None)` 
+#                             to
+#                               `input_type = kwargs.pop("input_type", "search_query")`
+# in .venv\Lib\site-packages\redisvl\utils\vectorize\text\cohere.py

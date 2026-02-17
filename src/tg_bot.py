@@ -151,7 +151,7 @@ class TelegramBot:
 
         await update.message.chat.send_action("typing")
         response = self.agent.run(query, user_id)
-        await update.message.reply_text(response["output"])
+        await update.message.reply_text(response)
 
     async def send_medical_fact(self, context: ContextTypes.DEFAULT_TYPE):
         """Send a medical fact to bot subscribers"""
