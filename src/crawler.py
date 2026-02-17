@@ -346,9 +346,9 @@ import aiohttp
 from bs4 import BeautifulSoup
 from crawl4ai import AsyncWebCrawler
 
-from scripts import create_folder, get_api_key
-from settings.logger import get_logger
-from settings.paths import DATA_DIR
+from src.scripts import create_folder, get_api_key
+from src.settings.logger import get_logger
+from src.settings.paths import DATA_DIR
 
 logger = get_logger(__name__)
 
@@ -681,16 +681,16 @@ class AsyncCrawler:
 
 
 async def test():
-    link = "https://ada.com/conditions/"
+    link = "https://medlineplus.gov/druginfo/drug_Aa.html"
 
     crawler = AsyncCrawler(
         link,
         max_concurrent_requests=15,
-        domain_name="diseases_conditions",
+        domain_name="Drugs, Herbs and Supplements",
         rate_delay=2,
     )
     try:
-        content_path = await crawler.extract_content(link)
+        content_path = await crawler.extract_content(link, max_depth=2)
     finally:
         await crawler.close()
 

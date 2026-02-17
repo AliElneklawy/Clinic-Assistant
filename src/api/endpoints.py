@@ -9,11 +9,11 @@ from src.agents.query_handler_agent import QueryHandlerAgent
 from src.api.dependencies.agent import get_agent
 from src.api.dependencies.calendar import get_calendar_service
 from src.api.dependencies.diabetes_clf import get_diabetes_service
+from src.models.appointment import BookAppointmentInput
 from src.models.chat_request import ChatRequest
 from src.models.classify_diabetes import ClassifyDiabetesInput
-from src.models.appointment import BookAppointmentInput
-from src.services.ml.classify_diabetes import ClassifyDiabetesService
 from src.services.calendar.calendar_service import CalendarService
+from src.services.ml.classify_diabetes import ClassifyDiabetesService
 
 router = APIRouter()
 
@@ -65,11 +65,9 @@ def predict_diabetes(
 @router.get(
     "/list_available_slots",
     summary="Available time slots",
-    description="List all the available appointments for the next 5 days excluding the holidays"
+    description="List all the available appointments for the next 5 days excluding the holidays",
 )
-def list_available_slots(
-    service: CalendarService = Depends(get_calendar_service)
-):
+def list_available_slots(service: CalendarService = Depends(get_calendar_service)):
     try:
         result = service.list_available_slots()
         return JSONResponse(status_code=200, content=result)
@@ -85,10 +83,16 @@ def list_available_slots(
         )
 
 
+@router.get("/me")
+def get_current_user(request: Request):
+    """Return the current session user_id (creates one if missing)."""
+    user_id = get_or_create_user_id(request)
+    return JSONResponse(status_code=200, content={"user_id": user_id})
+
+
 @router.post("/book_appointment")
 def book_appointment(
-    data: BookAppointmentInput,
-    service: CalendarService = Depends(get_calendar_service)
+    data: BookAppointmentInput, service: CalendarService = Depends(get_calendar_service)
 ):
     try:
         result = service.book_appointment(data)
@@ -107,20 +111,22 @@ def book_appointment(
 
 @router.post("/cancel_appointment")
 def cancel_appointment(
-    event_id: str, 
-    service: CalendarService = Depends(get_calendar_service)
+    data: dict, service: CalendarService = Depends(get_calendar_service)
 ):
+    event_id = data.get("event_id")
+    if not event_id:
+        raise HTTPException(status_code=400, detail="event_id is required")
     result = service.cancel_appointment(event_id)
     return JSONResponse(status_code=200, content=result)
 
 
-@router.get("/")
-def root():
-    """Root endpoint - redirect to docs"""
-    return JSONResponse(
-        status_code=200,
-        content={"message": "Clinic AI API", "docs": "/docs", "health": "/health"},
-    )
+# @router.get("/")
+# def root():
+#     """Root endpoint - redirect to docs"""
+#     return JSONResponse(
+#         status_code=200,
+#         content={"message": "Clinic AI API", "docs": "/docs", "health": "/health"},
+#     )
 
 
 # TODO

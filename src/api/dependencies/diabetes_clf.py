@@ -1,6 +1,5 @@
-from src.settings.paths import DIABETES_MODEL_PATH
 from src.services.ml.classify_diabetes import ClassifyDiabetesService
-
+from src.settings.paths import DIABETES_MODEL_PATH
 
 _diabetes_service_instance = None
 

@@ -17,6 +17,7 @@ from dotenv import load_dotenv
 from googleapiclient.discovery import build
 from langchain_tavily import TavilySearch
 
+from src.agents.tools import AgentTools
 from src.rag.rag_system import RAGSystem
 from src.scripts import get_api_key
 from src.scripts.auth_calendar import authenticate_calendar
@@ -31,7 +32,6 @@ from src.services.search.hybrid_search_service import HybridSearchService
 from src.services.search.web_search_service import WebSearchService
 from src.settings import agent_config
 from src.settings.paths import DIABETES_MODEL_PATH, INDEXES_DIR, MED_DATA_FILE
-from src.agents.tools import AgentTools
 
 load_dotenv()
 

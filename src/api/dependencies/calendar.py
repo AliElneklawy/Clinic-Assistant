@@ -1,10 +1,10 @@
 from googleapiclient.discovery import build
 
 from src.scripts.auth_calendar import authenticate_calendar
+from src.services.calendar.calendar_service import CalendarService
 from src.services.calendar.event_builder import EventBuilder
 from src.services.calendar.slot_manager import SlotManager
 from src.services.database.database_service import DatabaseOpsService
-from src.services.calendar.calendar_service import CalendarService
 
 _calendar_service_instance = None
 
@@ -23,5 +23,5 @@ def get_calendar_service():
             db=db_service,
             service=build("calendar", "v3", credentials=authenticate_calendar()),
         )
-    
+
     return _calendar_service_instance

@@ -36,6 +36,7 @@ class CalendarService:
         slots: dict = {}
 
         today = datetime.date.today()
+        now = datetime.datetime.now()
         end_date = today + datetime.timedelta(days=clinic_config.DAYS_TO_SHOW)
 
         time_min = (
@@ -71,6 +72,10 @@ class CalendarService:
                 if self.slot_manager._is_slot_available(
                     slot_start, slot_end, existing_events
                 ):
+                    # Hide slots that are in the past for today
+                    if current_date == today and slot_start < now:
+                        continue
+
                     available.append(
                         f"{slot_start.strftime('%I:%M %p')} - {slot_end.strftime('%I:%M %p')}"
                     )
@@ -106,9 +111,7 @@ class CalendarService:
 
         try:
             # Verify the slot is still available
-            start_datetime = datetime.datetime.combine(
-                data.date_str, data.time_str
-            )
+            start_datetime = datetime.datetime.combine(data.date_str, data.time_str)
             end_datetime = start_datetime + datetime.timedelta(
                 minutes=clinic_config.SLOT_DURATION_MINUTES
             )
@@ -187,12 +190,12 @@ class CalendarService:
             )
             logger.info("Successfuly added appointment details to the database.")
 
-            result = (
-                f"Appointment booked successfully for {data.patient_name or 'Patient'} on "
-                f"{data.date_str.strftime('%B %d, %Y')} at {data.time_str.strftime('%I:%M %p')}. "
-                f"Event ID: {created_event['id']}. Use this ID to cancel or reschedule the appointment. "
-                f"Use this link to add the event to your calendar: {add_to_calendar_link}"
-            )
+            result = {
+                "message": f"Appointment booked successfully for {data.patient_name or 'Patient'} on "
+                f"{data.date_str.strftime('%B %d, %Y')} at {data.time_str.strftime('%I:%M %p')}.",
+                "event_id": created_event["id"],
+                "calendar_link": add_to_calendar_link
+            }
 
             logger.info(f"Appointment booked: {result}")
             return result

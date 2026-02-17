@@ -12,7 +12,7 @@ CALENDAR_ID = "primary"
 
 # Schedule Settings
 SKIP_WEEKENDS = True
-DAYS_TO_SHOW = 5  # Show 5 days from now
+DAYS_TO_SHOW = 2  # Show 5 days from now
 
 # Lunch Break (optional)
 LUNCH_BREAK_START = datetime.time(12, 0)  # 12:00 PM

@@ -1,6 +1,5 @@
 from src.agents.query_handler_agent import QueryHandlerAgent
 
-
 _agent_instance = None
 
 

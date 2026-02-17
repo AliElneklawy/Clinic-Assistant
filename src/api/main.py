@@ -1,18 +1,59 @@
+# import os
+
+# from dotenv import load_dotenv
+# from fastapi import FastAPI
+# from starlette.middleware.sessions import SessionMiddleware
+
+# from .endpoints import router
+
+# load_dotenv()
+
+# app = FastAPI(
+#     title="Clinic AI API", description="Medical AI assistant API", version="2.0"
+# )
+
+# app.include_router(router)
+# app.add_middleware(SessionMiddleware, secret_key=os.getenv("SESSION_SECRET_KEY"))
+
 import os
+from pathlib import Path
 
 from dotenv import load_dotenv
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from starlette.middleware.sessions import SessionMiddleware
+from fastapi.middleware.cors import CORSMiddleware
 
 from .endpoints import router
 
 load_dotenv()
 
 app = FastAPI(
-    title="Clinic AI API", 
-    description="Medical AI assistant API",
-    version="2.0"
+    title="Clinic AI API", description="Medical AI assistant API", version="2.0"
 )
 
-app.include_router(router)
+# CORS middleware - allows frontend to communicate with backend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://127.0.0.1:8000", "http://localhost:8000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 app.add_middleware(SessionMiddleware, secret_key=os.getenv("SESSION_SECRET_KEY"))
+
+app.include_router(router)
+
+static_path = Path(__file__).parent / "static"
+if static_path.exists():
+    app.mount("/static", StaticFiles(directory=static_path), name="static")
+
+@app.get("/", include_in_schema=False)
+async def serve_frontend():
+    """Serve the medical app frontend"""
+    html_file = static_path / "index.html"
+    if html_file.exists():
+        return FileResponse(html_file)
+    return {"message": "Clinic AI API", "docs": "/docs", "health": "/health"}

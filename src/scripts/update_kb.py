@@ -6,7 +6,7 @@ src_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(src_dir))
 
 from src.rag.rag_system import RAGSystem
-from src.settings.paths import DISEASE_CONDITION_FILE, INDEXES_DIR
+from src.settings.paths import DISEASE_CONDITION_FILE, INDEXES_DIR, DRUGS_SUPPS_FILE
 
 
 def read_file(file_path):
@@ -20,8 +20,8 @@ def update_vectorstore(rag: RAGSystem, content: str):
 
 if __name__ == "__main__":
     rag = RAGSystem(
-        content_path=DISEASE_CONDITION_FILE,
+        content_path=DRUGS_SUPPS_FILE,
         index_path=INDEXES_DIR,  # / "index_7ad274e90429ac4.faiss.temp"
     )
-    new_content = read_file(DISEASE_CONDITION_FILE)
+    new_content = read_file(DRUGS_SUPPS_FILE)
     update_vectorstore(rag, new_content)
