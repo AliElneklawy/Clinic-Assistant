@@ -16,9 +16,10 @@ from redisvl.utils.vectorize import CohereTextVectorizer
 from src.agents.base_agent import BaseAgent
 from src.container import create_agent_tools
 from src.scripts import create_folder, get_api_key
-from src.settings import agent_config, prompts
+from src.settings import agent_config, cache_config, prompts
 from src.settings.logger import get_logger
 from src.settings.paths import DATA_DIR
+from src.services.cache.redis_service import RedisService
 
 logger = get_logger(__name__)
 
@@ -27,12 +28,6 @@ class QueryHandlerAgent(BaseAgent):
     def __init__(self):
         """
         Initialize the QueryHandlerAgent with RAG system and LLM.
-
-        Args:
-            content_path: Path to the content directory for the RAG system
-            index_path: Path to the index directory for the RAG system
-            rerank: Whether to enable reranking in the RAG system (default: True)
-            max_search_results: Maximum number of search results to retrieve (default: 3)
         """
         self.db_path = create_folder.create(DATA_DIR / "database") / "chat_history.db"
 
@@ -43,16 +38,7 @@ class QueryHandlerAgent(BaseAgent):
         self.agent_tools = create_agent_tools()  # AgentTools(rag=self.rag)
 
         logger.info("Initializing Redis cache...")
-        self.cache = SemanticCache(
-            name="MediCare_AI",
-            distance_threshold=0.2,
-            redis_url=os.getenv("REDIS_URL"),
-            ttl=3600*4,
-            vectorizer=CohereTextVectorizer(   # See the note about initializing the vectorizer at the last line
-                model="embed-multilingual-v3.0",
-                api_config={"api_key": get_api_key.get_key("COHERE")},
-            ),
-        )
+        self.cache = RedisService(name="MediCare_AI")
 
         super().__init__()
 
@@ -175,9 +161,9 @@ class QueryHandlerAgent(BaseAgent):
         Returns:
             The agent's response after processing the query and using available tools
         """
-        if response := self.cache.check(prompt=query):
+        if response := self.cache.retrieve(key=query):
             logger.info("Cache hit. Responding from cache...")
-            return response[0]['response']
+            return response[0]["response"]
 
         logger.info("Cache miss. Invoking LLM...")
         query_with_id = f"[User ID: {user_id}]\n{query}"
@@ -193,16 +179,14 @@ class QueryHandlerAgent(BaseAgent):
             config={"configurable": {"session_id": user_id}},
         )
 
-        self.cache.store(prompt=query, response=result["output"])
+        self.cache.store(key=query, value=result["output"])
 
         return result["output"]
 
 
 if __name__ == "__main__":
     agent = QueryHandlerAgent()
-    result = agent.run(
-        "How can I treat my headache?", "test_user_id2"
-    )
+    result = agent.run("How can I treat my headache?", "test_user_id2")
 
     print(result)
 
@@ -211,8 +195,8 @@ if __name__ == "__main__":
 #   1. TypeError: Must pass in a str value for cohere embedding input_type. See https://docs.cohere.com/reference/embed
 #   2. TypeError: Client.__init__() got an unexpected keyword argument 'input_type'
 # The second error occured when I tried to pass the 'input_type' arg CohereTextVectorizer.
-# So I had to change line 236 from 
-#                               `input_type = kwargs.pop("input_type", None)` 
+# So I had to change line 236 from
+#                               `input_type = kwargs.pop("input_type", None)`
 #                             to
 #                               `input_type = kwargs.pop("input_type", "search_query")`
 # in .venv\Lib\site-packages\redisvl\utils\vectorize\text\cohere.py

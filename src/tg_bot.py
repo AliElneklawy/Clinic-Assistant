@@ -264,9 +264,6 @@ if __name__ == "__main__":
 
 # View My Appointments – Let patients list their upcoming bookings.
 # → e.g., /my_appointments
-# [DONE] Reminders / Notifications – Schedule automatic reminders before appointments using JobQueue.
-# Reschedule Flow – Implement a guided conversation to change date/time easily.
-# Confirmations – Send confirmation messages (and maybe email) after booking/canceling.
 
 # ⚕️ 3. Medical Assistant Features
 
@@ -274,7 +271,6 @@ if __name__ == "__main__":
 # Symptom Checker – Collect symptoms and suggest possible conditions.
 # Medication Reminders – Allow users to set reminders for their meds.
 # Vitals Tracker – Log and visualize user vitals (blood sugar, pressure, etc.) over time.
-# Health Tips – Send daily/weekly medical tips from a curated dataset or RAG index.
 
 # 🧠 4. AI / Data Features
 
@@ -292,14 +288,3 @@ if __name__ == "__main__":
 
 # For real-world use, this is critical:
 # Patient Verification – OTP/email confirmation before booking.
-
-# ☁️ 7. Integration Ideas
-
-# Email / SMS Notifications – Send confirmations via external channels.
-
-# 🧩 8. Fun or Helpful Extras
-
-# Health Quiz or Tips of the Day – “Did you know?” facts or simple wellness quizzes.
-# Feedback System – “How was your visit today?” to collect ratings.
-# Emergency Contact Shortcut – Quick access to emergency numbers.
-# Location Sharing – Let users send location to find the nearest clinic branch.

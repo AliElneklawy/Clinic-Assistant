@@ -194,7 +194,7 @@ class CalendarService:
                 "message": f"Appointment booked successfully for {data.patient_name or 'Patient'} on "
                 f"{data.date_str.strftime('%B %d, %Y')} at {data.time_str.strftime('%I:%M %p')}.",
                 "event_id": created_event["id"],
-                "calendar_link": add_to_calendar_link
+                "calendar_link": add_to_calendar_link,
             }
 
             logger.info(f"Appointment booked: {result}")
