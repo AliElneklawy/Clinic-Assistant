@@ -663,10 +663,11 @@
 
     <div class="container">
         <div class="tabs">
-            <button class="tab active" onclick="switchTab('chat')">💬 AI Assistant</button>
-            <button class="tab" onclick="switchTab('diabetes')">🩺 Diabetes Risk</button>
-            <button class="tab" onclick="switchTab('appointments')">📅 Book Appointment</button>
-            <button class="tab" onclick="switchTab('manage')">⚙️ Manage Appointments</button>
+            <button class="tab active" onclick="switchTab(event, 'chat')">💬 AI Assistant</button>
+            <button class="tab" onclick="switchTab(event, 'diabetes')">🩺 Diabetes Risk</button>
+            <button class="tab" onclick="switchTab(event, 'druginfo')">💊 Drug Info</button>
+            <button class="tab" onclick="switchTab(event, 'appointments')">📅 Book Appointment</button>
+            <button class="tab" onclick="switchTab(event, 'manage')">⚙️ Manage Appointments</button>
         </div>
 
         <!-- Chat Tab -->
@@ -908,7 +909,55 @@
                 </form>
             </div>
         </div>
-    </div>
+
+        <!-- Drug Info Tab -->
+        <div id="druginfo" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Drug Information</h2>
+                    <p class="card-subtitle">Enter a drug name to view use cases and side effects</p>
+                </div>
+
+                <div class="info-banner">
+                    <div class="info-banner-title">ℹ️ Note</div>
+                    <div class="info-banner-text">Results are informational and extracted from publicly available drug label data. This does not replace medical advice.</div>
+                </div>
+
+                <form id="drugInfoForm" onsubmit="fetchDrugInfo(event)">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Drug name *</label>
+                            <input type="text" class="form-input" id="drugNameInput" placeholder="e.g. Sitagliptin" required>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        <span>Get Info</span>
+                        <span>🔎</span>
+                    </button>
+
+                    <div class="loading" id="drugInfoLoading">
+                        <div class="spinner"></div>
+                        <span>Fetching drug information...</span>
+                    </div>
+                </form>
+
+                <div class="result-card" id="drugInfoResult">
+                    <div class="result-header">
+                        <div class="result-icon negative">
+                            <span>💊</span>
+                        </div>
+                        <div>
+                            <h3 class="result-title" id="drugInfoTitle">Results</h3>
+                        </div>
+                    </div>
+
+                    <div class="result-message" id="drugInfoUseCases"></div>
+                    <div style="height: 1rem;"></div>
+                    <div class="result-message" id="drugInfoSideEffects"></div>
+                </div>
+            </div>
+        </div>
 
     <script>
         // Configuration
@@ -956,12 +1005,81 @@
         });
 
         // Tab Switching
-        function switchTab(tabName) {
+        function switchTab(event, tabName) {
             document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
             
             event.target.classList.add('active');
             document.getElementById(tabName).classList.add('active');
+        }
+
+        function toParagraphsHtml(text) {
+            const safe = escapeHtml(String(text ?? ''));
+            const paragraphs = safe
+                .split(/\n\s*\n/g)
+                .map(p => p.trim())
+                .filter(Boolean)
+                .map(p => `<p>${p}</p>`)
+                .join('');
+            return paragraphs || `<p>${safe}</p>`;
+        }
+
+        async function fetchDrugInfo(event) {
+            event.preventDefault();
+
+            const drugName = document.getElementById('drugNameInput').value.trim();
+            if (!drugName) return;
+
+            const loading = document.getElementById('drugInfoLoading');
+            const resultCard = document.getElementById('drugInfoResult');
+
+            const useCasesDiv = document.getElementById('drugInfoUseCases');
+            const sideEffectsDiv = document.getElementById('drugInfoSideEffects');
+            const titleEl = document.getElementById('drugInfoTitle');
+
+            loading.classList.add('show');
+            resultCard.classList.remove('show');
+
+            useCasesDiv.innerHTML = '';
+            sideEffectsDiv.innerHTML = '';
+            titleEl.textContent = `Results for "${drugName}"`;
+
+            try {
+                const url = `${API_BASE}/drug_info?drug_name=${encodeURIComponent(drugName)}`;
+                const resp = await fetch(url);
+                const data = await resp.json().catch(() => null);
+
+                loading.classList.remove('show');
+
+                if (!resp.ok) {
+                    const msg = (data && data.detail) ? String(data.detail) : 'Failed to fetch drug info.';
+                    useCasesDiv.innerHTML = `<p><strong>Error:</strong> ${escapeHtml(msg)}</p>`;
+                    sideEffectsDiv.innerHTML = '';
+                    resultCard.classList.add('show');
+                    return;
+                }
+
+                if (typeof data === 'string') {
+                    useCasesDiv.innerHTML = `<p>${escapeHtml(data)}</p>`;
+                    sideEffectsDiv.innerHTML = '';
+                    resultCard.classList.add('show');
+                    return;
+                }
+
+                const useCases = (data && data["Use Cases"]) ?? 'No use cases found.';
+                const sideEffects = (data && data["Side Effects"]) ?? 'No side effects found.';
+
+                useCasesDiv.innerHTML = `<h4 style="margin-bottom:0.5rem; color: var(--primary);">Use Cases</h4>${toParagraphsHtml(useCases)}`;
+                sideEffectsDiv.innerHTML = `<h4 style="margin-bottom:0.5rem; color: var(--primary);">Side Effects</h4>${toParagraphsHtml(sideEffects)}`;
+
+                resultCard.classList.add('show');
+            } catch (e) {
+                loading.classList.remove('show');
+                useCasesDiv.innerHTML = `<p><strong>Error:</strong> ${escapeHtml('Network error. Please try again.')}</p>`;
+                sideEffectsDiv.innerHTML = '';
+                resultCard.classList.add('show');
+                console.error(e);
+            }
         }
 
         // Chat Functions
