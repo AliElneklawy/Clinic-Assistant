@@ -9,10 +9,12 @@ from src.agents.query_handler_agent import QueryHandlerAgent
 from src.api.dependencies.agent import get_agent
 from src.api.dependencies.calendar import get_calendar_service
 from src.api.dependencies.diabetes_clf import get_diabetes_service
+from src.api.dependencies.drug import get_drug_search_service
 from src.models.appointment import BookAppointmentInput
 from src.models.chat_request import ChatRequest
 from src.models.classify_diabetes import ClassifyDiabetesInput
 from src.services.calendar.calendar_service import CalendarService
+from src.services.search.drug_search_service import DrugSearchService
 from src.services.ml.classify_diabetes import ClassifyDiabetesService
 
 router = APIRouter()
@@ -81,6 +83,19 @@ def list_available_slots(service: CalendarService = Depends(get_calendar_service
             status_code=400,
             detail=f"Error listing slots: {str(e)}",
         )
+
+
+@router.get(
+    "/drug_info",
+    summary="Find information about drugs",
+    description="Find the side effects and use cases by giving the drug name only"
+)
+def drug_info(drug_name: str, service: DrugSearchService = Depends(get_drug_search_service)):
+    try:
+        result = service.get_drug_info(drug_name)
+        return JSONResponse(status_code=200, content=result)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/me")
