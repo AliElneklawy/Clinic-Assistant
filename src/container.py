@@ -28,6 +28,7 @@ from src.services.database.database_service import DatabaseOpsService
 from src.services.email.email_service import EmailService
 from src.services.ml.classify_diabetes import ClassifyDiabetesService
 from src.services.search.database_search_service import DatabaseSearchService
+from src.services.search.drug_search_service import DrugSearchService
 from src.services.search.hybrid_search_service import HybridSearchService
 from src.services.search.web_search_service import WebSearchService
 from src.settings import agent_config
@@ -66,6 +67,7 @@ def create_agent_tools():
     web_search = WebSearchService(tavily_search)
     db_search = DatabaseSearchService(rag)
     hyprid_search_service = HybridSearchService(db_search, web_search)
+    drug_search_service = DrugSearchService()
 
     # ML services
     classify_diabetes_service = ClassifyDiabetesService(
@@ -82,6 +84,7 @@ def create_agent_tools():
     return AgentTools(
         calendar_service=calendar_service,
         search_service=hyprid_search_service,
+        drug_search_service=drug_search_service,
         diabetes_classifier_service=classify_diabetes_service,
         email_service=email_service,
     )

@@ -64,17 +64,6 @@ class ClassifyDiabetesService:
         Classify a patient's diabetes based on various factors.
         returns a string with the probability of the patient being diabetic and the final diagnosis.
         """
-        # (
-        #     gender,
-        #     age,
-        #     hypertension,
-        #     heart_disease,
-        #     smoking_history,
-        #     bmi,
-        #     HbA1c_level,
-        #     blood_glucose_level,
-        # ) = unpack_data.unpack(data, ClassifyDiabetesInput)
-
         if isinstance(data, str):
             data = unpack_data.unpack(data, ClassifyDiabetesInput)
 

@@ -1,5 +1,3 @@
-import os
-
 from langchain.agents import (
     AgentExecutor,
     create_react_agent,
@@ -10,16 +8,14 @@ from langchain_cohere import ChatCohere
 from langchain_community.chat_message_histories import SQLChatMessageHistory
 from langchain_core.prompts import PromptTemplate
 from langchain_core.runnables.history import RunnableWithMessageHistory
-from redisvl.extensions.cache.llm import SemanticCache
-from redisvl.utils.vectorize import CohereTextVectorizer
 
 from src.agents.base_agent import BaseAgent
 from src.container import create_agent_tools
 from src.scripts import create_folder, get_api_key
-from src.settings import agent_config, cache_config, prompts
+from src.services.cache.redis_service import RedisService
+from src.settings import agent_config, prompts
 from src.settings.logger import get_logger
 from src.settings.paths import DATA_DIR
-from src.services.cache.redis_service import RedisService
 
 logger = get_logger(__name__)
 
@@ -35,7 +31,7 @@ class QueryHandlerAgent(BaseAgent):
         self.llm = ChatCohere(cohere_api_key=get_api_key.get_key("COHERE"))
 
         logger.info("Initializing tools...")
-        self.agent_tools = create_agent_tools()  # AgentTools(rag=self.rag)
+        self.agent_tools = create_agent_tools()
 
         logger.info("Initializing Redis cache...")
         self.cache = RedisService(name="MediCare_AI")
@@ -115,6 +111,16 @@ class QueryHandlerAgent(BaseAgent):
                     "gender='Male', age=30, hypertension='yes', heart_disease='no', smoking_history='never', bmi=25.0, HbA1c_level=5.5, blood_glucose_level=120"
                 ),
             ),
+            Tool(
+                func=self.agent_tools.search_drug,
+                name="search_drug",
+                description=(
+                    "Find use cases and the side effects of drugs using DailyMed website. "
+                    "Use this tool if the user asks for the use cases or side effects of a specific drug. "
+                    "Drug name is passed as a string. If the drug name is provided incorrectly by the user, "
+                    "feel free to fix it. Summarize the the use cases and the side effects if they are too long."
+                ),
+            ),
         ]
 
     def _init_agent(self):
@@ -189,14 +195,3 @@ if __name__ == "__main__":
     result = agent.run("How can I treat my headache?", "test_user_id2")
 
     print(result)
-
-
-# Regarding the initialization process of the vectorizer. I kept getting the following errors:
-#   1. TypeError: Must pass in a str value for cohere embedding input_type. See https://docs.cohere.com/reference/embed
-#   2. TypeError: Client.__init__() got an unexpected keyword argument 'input_type'
-# The second error occured when I tried to pass the 'input_type' arg CohereTextVectorizer.
-# So I had to change line 236 from
-#                               `input_type = kwargs.pop("input_type", None)`
-#                             to
-#                               `input_type = kwargs.pop("input_type", "search_query")`
-# in .venv\Lib\site-packages\redisvl\utils\vectorize\text\cohere.py

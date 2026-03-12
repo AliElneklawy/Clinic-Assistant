@@ -15,11 +15,7 @@ from telegram.ext import (
 )
 
 from src.agents.query_handler_agent import QueryHandlerAgent
-from src.scripts import get_api_key
-
-# from services.calendar.calendar_service import CalendarService
 from src.services.database.database_service import DatabaseOpsService
-from src.services.email.email_service import EmailService
 from src.settings.logger import get_logger
 
 load_dotenv()
@@ -32,7 +28,6 @@ class TelegramBot:
 
         self.agent = agent
         self.db = db
-        # self.email = email
 
         self.application = (
             Application.builder()
@@ -142,7 +137,7 @@ class TelegramBot:
             "Please wait while I add the new content to my knowledge base..."
         )
 
-        self.agent.rag.update_vectorstore(content)
+        self.agent.agent_tools.search_service.db_service.rag.update_vectorstore(content)
         await msg.edit_text("Content added successfully")
 
     async def handle_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -226,22 +221,6 @@ class TelegramBot:
                     condition=f"event_id = '{event_id}'",
                 )
 
-            # elif status == "confirmed" and datetime.fromisoformat(
-            #     date_time
-            # ) - datetime.now() < timedelta(hours=4):
-            #     # Send confirmation email 4 hours before the appointment
-            #     logger.info(f"Sending confirmation email to {patient_email}")
-            #     self.email.send_appointment_confirmation(
-            #         patient_email, patient_name, date_time
-            #     )
-
-            #     self.db.update_field(
-            #         table_name="appointments",
-            #         field_name="email_sent",
-            #         value=True,
-            #         condition=f"event_id = '{event_id}'",
-            #     )
-
     def run(self):
         logger.info("========= Bot is running =========")
         self.application.run_polling()
@@ -250,10 +229,6 @@ class TelegramBot:
 if __name__ == "__main__":
     agent = QueryHandlerAgent()
     db = DatabaseOpsService()
-    # email = EmailService(
-    #     sender_email=get_api_key.get_key("SENDER_EMAIL"),
-    #     app_password=get_api_key.get_key("GMAIL_APP_PASSWORD"),
-    # )
     bot = TelegramBot(agent, db)
 
     bot.run()

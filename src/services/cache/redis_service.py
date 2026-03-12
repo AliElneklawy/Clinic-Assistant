@@ -56,3 +56,14 @@ class RedisService(BaseCache):
 
     def set_expiration(self, key: str, ttl: int | None = None) -> None:
         self.cache.expire(key=key, ttl=ttl)
+
+
+# Regarding the initialization process of the vectorizer. I kept getting the following errors:
+#   1. TypeError: Must pass in a str value for cohere embedding input_type. See https://docs.cohere.com/reference/embed
+#   2. TypeError: Client.__init__() got an unexpected keyword argument 'input_type'
+# The second error occured when I tried to pass the 'input_type' arg CohereTextVectorizer.
+# So I had to change line 236 from
+#                               `input_type = kwargs.pop("input_type", None)`
+#                             to
+#                               `input_type = kwargs.pop("input_type", "search_query")`
+# in .venv\Lib\site-packages\redisvl\utils\vectorize\text\cohere.py

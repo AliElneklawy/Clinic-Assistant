@@ -5,6 +5,7 @@ from pydantic import BaseModel
 from src.services.calendar.calendar_service import CalendarService
 from src.services.email.email_service import EmailService
 from src.services.ml.classify_diabetes import ClassifyDiabetesService
+from src.services.search.drug_search_service import DrugSearchService
 from src.services.search.hybrid_search_service import HybridSearchService
 from src.settings.logger import get_logger
 
@@ -17,11 +18,13 @@ class AgentTools:
     def __init__(
         self,
         search_service: HybridSearchService,
+        drug_search_service: DrugSearchService,
         calendar_service: CalendarService,
         diabetes_classifier_service: ClassifyDiabetesService,
         email_service: EmailService,
     ):
         self.search_service = search_service
+        self.drug_search_service = drug_search_service
         self.calendar_service = calendar_service
         self.diabetes_classifier_service = diabetes_classifier_service
         self.email_service = email_service
@@ -53,6 +56,13 @@ class AgentTools:
         returns a string with the probability of the patient being diabetic and the final diagnosis.
         """
         result = self.diabetes_classifier_service.classify_diabetes(data)
+        return result
+
+    def search_drug(self, drug_name: str):
+        """
+        Find the side effects and use cases of drugs.
+        """
+        result = self.drug_search_service.get_drug_info(drug_name)
         return result
 
     def list_available_slots(self, _="") -> str:
