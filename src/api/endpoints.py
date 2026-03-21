@@ -14,8 +14,8 @@ from src.models.appointment import BookAppointmentInput
 from src.models.chat_request import ChatRequest
 from src.models.classify_diabetes import ClassifyDiabetesInput
 from src.services.calendar.calendar_service import CalendarService
-from src.services.search.drug_search_service import DrugSearchService
 from src.services.ml.classify_diabetes import ClassifyDiabetesService
+from src.services.search.drug_search_service import DrugSearchService
 
 router = APIRouter()
 
@@ -88,9 +88,11 @@ def list_available_slots(service: CalendarService = Depends(get_calendar_service
 @router.get(
     "/drug_info",
     summary="Find information about drugs",
-    description="Find the side effects and use cases by giving the drug name only"
+    description="Find the side effects and use cases by giving the drug name only",
 )
-def drug_info(drug_name: str, service: DrugSearchService = Depends(get_drug_search_service)):
+def drug_info(
+    drug_name: str, service: DrugSearchService = Depends(get_drug_search_service)
+):
     try:
         result = service.get_drug_info(drug_name)
         return JSONResponse(status_code=200, content=result)

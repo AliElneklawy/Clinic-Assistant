@@ -1,7 +1,7 @@
 from src.services.search.drug_search_service import DrugSearchService
 
-
 _drug_search_service_instance = None
+
 
 def get_drug_search_service():
     global _drug_search_service_instance
