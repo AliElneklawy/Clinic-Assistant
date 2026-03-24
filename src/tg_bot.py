@@ -1,5 +1,3 @@
-import json
-import os
 from datetime import datetime, timedelta
 
 from dotenv import load_dotenv
@@ -17,6 +15,7 @@ from telegram.ext import (
 from src.agents.query_handler_agent import QueryHandlerAgent
 from src.services.database.database_service import DatabaseOpsService
 from src.settings.logger import get_logger
+from src.settings.settings import settings
 
 load_dotenv()
 logger = get_logger(__name__)
@@ -24,14 +23,14 @@ logger = get_logger(__name__)
 
 class TelegramBot:
     def __init__(self, agent: QueryHandlerAgent, db: DatabaseOpsService):
-        self.admins = json.loads(os.getenv("ADMINS"))
+        self.admins = settings.ADMINS
 
         self.agent = agent
         self.db = db
 
         self.application = (
             Application.builder()
-            .token(os.getenv("TELEGRAM_BOT_TOKEN"))
+            .token(settings.TELEGRAM_BOT_TOKEN)
             .concurrent_updates(True)
             .build()
         )

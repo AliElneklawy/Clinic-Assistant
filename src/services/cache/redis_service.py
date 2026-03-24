@@ -1,4 +1,3 @@
-import os
 from typing import Any, Dict, List, Optional
 
 from redisvl.extensions.cache.llm import SemanticCache
@@ -8,6 +7,7 @@ from src.scripts import get_api_key
 from src.services.cache.base_cache import BaseCache
 from src.settings import cache_config
 from src.settings.logger import get_logger
+from src.settings.settings import settings
 
 logger = get_logger(__name__)
 
@@ -17,11 +17,11 @@ class RedisService(BaseCache):
         self.cache = SemanticCache(
             name=name,
             distance_threshold=cache_config.DIST_THRESHOLD,
-            redis_url=os.getenv("REDIS_URL"),
+            redis_url=settings.REDIS_URL,
             ttl=cache_config.TTL,
             vectorizer=CohereTextVectorizer(  # See the note about initializing the vectorizer at the last line
                 model=cache_config.EMBEDDER,
-                api_config={"api_key": get_api_key.get_key("COHERE")},
+                api_config={"api_key": settings.COHERE},
             ),
         )
 
