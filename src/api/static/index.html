@@ -1,0 +1,1526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediCare AI - Your Health Assistant</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0A6847;
+            --primary-light: #0D8B5F;
+            --primary-dark: #084D35;
+            --accent: #F4A261;
+            --accent-light: #F6B77D;
+            --bg-primary: #FDFBF7;
+            --bg-secondary: #F5F1E8;
+            --bg-card: #FFFFFF;
+            --text-primary: #1A2B23;
+            --text-secondary: #5A6B63;
+            --text-muted: #8A9B93;
+            --border: #E0D8C8;
+            --shadow-sm: 0 1px 3px rgba(10, 104, 71, 0.05);
+            --shadow-md: 0 4px 12px rgba(10, 104, 71, 0.08);
+            --shadow-lg: 0 10px 30px rgba(10, 104, 71, 0.12);
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+        }
+
+        html.dark {
+            --primary: #0D8B5F;
+            --primary-light: #0A6847;
+            --primary-dark: #0A6847;
+            --accent: #F6B77D;
+            --accent-light: #F4A261;
+            --bg-primary: #0F1419;
+            --bg-secondary: #1A1F2E;
+            --bg-card: #1E2530;
+            --text-primary: #E1E8ED;
+            --text-secondary: #AAB8C2;
+            --text-muted: #657786;
+            --border: #38444D;
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+            --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Background Pattern */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 20%, rgba(10, 104, 71, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(244, 162, 97, 0.04) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        /* Header */
+        header {
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+            padding: 1.5rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .logo-text {
+            font-family: 'DM Serif Display', serif;
+            font-size: 1.5rem;
+            color: var(--primary);
+            font-weight: 400;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        .theme-toggle {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 0.5rem;
+            cursor: pointer;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            transition: all 0.3s ease;
+        }
+
+        .theme-toggle:hover {
+            background: var(--bg-secondary);
+            transform: scale(1.05);
+        }
+
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: white;
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Tab Navigation */
+        .tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            background: var(--bg-card);
+            padding: 0.5rem;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .tab {
+            flex: 1;
+            padding: 1rem 1.5rem;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            border-radius: var(--radius-md);
+            transition: all 0.3s ease;
+            position: relative;
+            font-family: 'IBM Plex Sans', sans-serif;
+        }
+
+        .tab:hover {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+
+        .tab.active {
+            background: var(--primary);
+            color: white;
+            box-shadow: var(--shadow-md);
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Cards */
+        .card {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            padding: 2rem;
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border);
+        }
+
+        .card-header {
+            margin-bottom: 1.5rem;
+        }
+
+        .card-title {
+            font-family: 'DM Serif Display', serif;
+            font-size: 1.75rem;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .card-subtitle {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        /* Chat Interface */
+        .chat-container {
+            display: grid;
+            grid-template-rows: 1fr auto;
+            height: calc(100vh - 280px);
+            min-height: 500px;
+        }
+
+        .messages {
+            overflow-y: auto;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            background: var(--bg-secondary);
+            border-radius: var(--radius-md);
+            margin-bottom: 1.5rem;
+        }
+
+        .message {
+            display: flex;
+            gap: 1rem;
+            animation: slideIn 0.3s ease;
+            max-width: 85%;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .message.user {
+            align-self: flex-end;
+            flex-direction: row-reverse;
+        }
+
+        .message-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 1.25rem;
+        }
+
+        .message.assistant .message-avatar {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+        }
+
+        .message.user .message-avatar {
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
+        }
+
+        .message-content {
+            background: var(--bg-card);
+            padding: 1rem 1.25rem;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-sm);
+            color: var(--text-primary);
+        }
+
+        .message.user .message-content {
+            background: var(--primary);
+            color: white;
+        }
+
+        .message-time {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+        }
+
+        /* Chat Input */
+        .chat-input-container {
+            display: flex;
+            gap: 1rem;
+            align-items: flex-end;
+        }
+
+        .input-wrapper {
+            flex: 1;
+            position: relative;
+        }
+
+        .chat-input {
+            width: 100%;
+            padding: 1rem 1.25rem;
+            border: 2px solid var(--border);
+            border-radius: var(--radius-lg);
+            font-size: 0.95rem;
+            font-family: 'IBM Plex Sans', sans-serif;
+            resize: none;
+            transition: all 0.3s ease;
+            background: var(--bg-card);
+            color: var(--text-primary);
+            min-height: 56px;
+            max-height: 120px;
+        }
+
+        .chat-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(10, 104, 71, 0.1);
+        }
+
+        .btn {
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'IBM Plex Sans', sans-serif;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: white;
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-card);
+            border-color: var(--primary);
+        }
+
+        /* Form Inputs */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .form-label {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .form-input {
+            padding: 0.875rem 1rem;
+            border: 2px solid var(--border);
+            border-radius: var(--radius-md);
+            font-size: 0.95rem;
+            font-family: 'IBM Plex Sans', sans-serif;
+            transition: all 0.3s ease;
+            background: var(--bg-card);
+            color: var(--text-primary);
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(10, 104, 71, 0.1);
+        }
+
+        /* Results Display */
+        .result-card {
+            background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-card) 100%);
+            border: 2px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 2rem;
+            margin-top: 1.5rem;
+            display: none;
+        }
+
+        .result-card.show {
+            display: block;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .result-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .result-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .result-icon.positive {
+            background: linear-gradient(135deg, #E74C3C 0%, #C0392B 100%);
+        }
+
+        .result-icon.negative {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+        }
+
+        .result-title {
+            font-family: 'DM Serif Display', serif;
+            font-size: 1.5rem;
+            color: var(--primary);
+        }
+
+        .result-probability {
+            font-size: 2.5rem;
+            font-weight: 600;
+            color: var(--primary);
+            margin: 1rem 0;
+        }
+
+        .result-message {
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        /* Appointments */
+        .slots-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .slot-card {
+            padding: 1.25rem;
+            border: 2px solid var(--border);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: var(--bg-card);
+            text-align: center;
+        }
+
+        .slot-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .slot-card.selected {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .slot-time {
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .slot-date {
+            font-size: 0.875rem;
+            opacity: 0.8;
+            color: var(--text-secondary);
+        }
+
+        .appointment-form {
+            background: var(--bg-secondary);
+            padding: 2rem;
+            border-radius: var(--radius-md);
+            margin-top: 1.5rem;
+        }
+
+        /* Loading State */
+        .loading {
+            display: none;
+            align-items: center;
+            gap: 0.75rem;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            padding: 1rem;
+        }
+
+        .loading.show {
+            display: flex;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 3px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Info Banner */
+        .info-banner {
+            background: linear-gradient(135deg, rgba(10, 104, 71, 0.05) 0%, rgba(244, 162, 97, 0.05) 100%);
+            border-left: 4px solid var(--primary);
+            padding: 1.25rem;
+            border-radius: var(--radius-md);
+            margin-bottom: 2rem;
+        }
+
+        .info-banner-title {
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .info-banner-text {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            .tabs {
+                flex-direction: column;
+            }
+
+            .chat-container {
+                height: calc(100vh - 350px);
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .slots-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .message {
+                max-width: 95%;
+            }
+        }
+
+        /* Success Message */
+        .success-message {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: white;
+            padding: 1.5rem;
+            border-radius: var(--radius-md);
+            text-align: center;
+            display: none;
+            margin-top: 1.5rem;
+        }
+
+        .success-message.show {
+            display: block;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .success-message-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .success-message-title {
+            font-family: 'DM Serif Display', serif;
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <div class="logo">
+                <div class="logo-icon">⚕️</div>
+                <div class="logo-text">MediCare AI</div>
+            </div>
+            <div class="user-info">
+                <button id="themeToggle" class="theme-toggle" title="Toggle dark mode">🌙</button>
+                <span id="userId">Session Active</span>
+                <div class="user-avatar">U</div>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab(event, 'chat')">💬 AI Assistant</button>
+            <button class="tab" onclick="switchTab(event, 'diabetes')">🩺 Diabetes Risk</button>
+            <button class="tab" onclick="switchTab(event, 'druginfo')">💊 Drug Info</button>
+            <button class="tab" onclick="switchTab(event, 'appointments')">📅 Book Appointment</button>
+            <button class="tab" onclick="switchTab(event, 'manage')">⚙️ Manage Appointments</button>
+        </div>
+
+        <!-- Chat Tab -->
+        <div id="chat" class="tab-content active">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">AI Health Assistant</h2>
+                    <p class="card-subtitle">Ask questions about your health, symptoms, or medical concerns</p>
+                </div>
+
+                <div class="chat-container">
+                    <div class="messages" id="chatMessages">
+                        <div class="message assistant">
+                            <div class="message-avatar">🤖</div>
+                            <div>
+                                <div class="message-content">
+                                    Hello! I'm your MediCare AI assistant. I can help you with medical questions, book appointments, or assess diabetes risk. How can I assist you today?
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="chat-input-container">
+                        <div class="input-wrapper">
+                            <textarea 
+                                class="chat-input" 
+                                id="chatInput" 
+                                placeholder="Ask me anything about your health..."
+                                rows="1"
+                            ></textarea>
+                        </div>
+                        <button class="btn btn-primary" onclick="sendMessage()">
+                            <span>Send</span>
+                            <span>→</span>
+                        </button>
+                    </div>
+
+                    <div class="loading" id="chatLoading">
+                        <div class="spinner"></div>
+                        <span>AI is thinking...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Diabetes Prediction Tab -->
+        <div id="diabetes" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Diabetes Risk Assessment</h2>
+                    <p class="card-subtitle">Enter your health metrics for an AI-powered diabetes risk evaluation</p>
+                </div>
+
+                <div class="info-banner">
+                    <div class="info-banner-title">🔒 Your Privacy Matters</div>
+                    <div class="info-banner-text">All data is processed securely and used only for your risk assessment. This tool is for informational purposes only and does not replace professional medical advice.</div>
+                </div>
+
+                <form id="diabetesForm" onsubmit="predictDiabetes(event)">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Gender</label>
+                            <select class="form-input" name="gender" required>
+                                <option value="">Select...</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Age (years)</label>
+                            <input type="number" class="form-input" name="age" min="0" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Hypertension</label>
+                            <select class="form-input" name="hypertension" required>
+                                <option value="">Select...</option>
+                                <option value="no">No</option>
+                                <option value="yes">Yes</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Heart Disease</label>
+                            <select class="form-input" name="heart_disease" required>
+                                <option value="">Select...</option>
+                                <option value="no">No</option>
+                                <option value="yes">Yes</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Smoking History</label>
+                            <select class="form-input" name="smoking_history" required>
+                                <option value="">Select...</option>
+                                <option value="never">Never</option>
+                                <option value="no_info">No info</option>
+                                <option value="former">Former</option>
+                                <option value="current">Current</option>
+                                <option value="not_current">Not current</option>
+                                <option value="ever">Ever</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">BMI</label>
+                            <input type="number" class="form-input" name="bmi" step="0.1" min="0" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">HbA1c Level</label>
+                            <input type="number" class="form-input" name="HbA1c_level" step="0.1" min="0" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Blood Glucose Level</label>
+                            <input type="number" class="form-input" name="blood_glucose_level" step="0.1" min="0" required>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        <span>Analyze Risk</span>
+                        <span>🔍</span>
+                    </button>
+
+                    <div class="loading" id="diabetesLoading">
+                        <div class="spinner"></div>
+                        <span>Analyzing your data...</span>
+                    </div>
+                </form>
+
+                <div class="result-card" id="diabetesResult">
+                    <div class="result-header">
+                        <div class="result-icon" id="resultIcon">
+                            <span id="resultEmoji"></span>
+                        </div>
+                        <div>
+                            <h3 class="result-title" id="resultTitle"></h3>
+                        </div>
+                    </div>
+                    <div class="result-probability" id="resultProbability"></div>
+                    <div class="result-message" id="resultMessage"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Appointments Tab -->
+        <div id="appointments" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Book an Appointment</h2>
+                    <p class="card-subtitle">Select an available time slot and provide your details</p>
+                </div>
+
+                <div class="info-banner">
+                    <div class="info-banner-title">📋 Appointment Information</div>
+                    <div class="info-banner-text">View available slots for the next 5 days. Select your preferred time and fill in your contact details to confirm your booking.</div>
+                </div>
+
+                <button class="btn btn-secondary" onclick="loadSlots()" style="margin-bottom: 1.5rem;">
+                    <span>Load Available Slots</span>
+                    <span>🔄</span>
+                </button>
+
+                <div class="loading" id="slotsLoading">
+                    <div class="spinner"></div>
+                    <span>Loading available appointments...</span>
+                </div>
+
+                <div class="slots-grid" id="slotsGrid"></div>
+
+                <div class="appointment-form" id="appointmentForm" style="display: none;">
+                    <h3 style="font-family: 'DM Serif Display', serif; margin-bottom: 1.5rem; color: var(--primary);">Your Details</h3>
+                    <form onsubmit="bookAppointment(event)">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label class="form-label">Full Name *</label>
+                                <input type="text" class="form-input" id="patientName" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Age *</label>
+                                <input type="number" class="form-input" id="patientAge" min="0" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Email Address *</label>
+                                <input type="email" class="form-input" id="patientEmail" required>
+                            </div>
+                        </div>
+
+                        <div class="form-group" style="margin-top: 1rem;">
+                            <label class="form-label">Reason for Visit *</label>
+                            <textarea class="form-input" id="appointmentReason" rows="3" placeholder="Briefly describe your reason for the appointment..." required></textarea>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary" style="margin-top: 1.5rem;">
+                            <span>Confirm Appointment</span>
+                            <span>✓</span>
+                        </button>
+
+                        <div class="loading" id="bookingLoading">
+                            <div class="spinner"></div>
+                            <span>Booking your appointment...</span>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="success-message" id="appointmentSuccess">
+                    <div class="success-message-icon">✓</div>
+                    <div class="success-message-title">Appointment Confirmed!</div>
+                    <div id="appointmentDetails"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Manage Appointments Tab -->
+        <div id="manage" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Manage Appointments</h2>
+                    <p class="card-subtitle">Cancel an existing appointment using its Event ID</p>
+                </div>
+
+                <div class="info-banner">
+                    <div class="info-banner-title">📝 How to find Event ID</div>
+                    <div class="info-banner-text">The Event ID is shown in your confirmation after booking. You can also find it in your Google Calendar event details.</div>
+                </div>
+
+                <form onsubmit="cancelById(event)">
+                    <div class="form-group">
+                        <label class="form-label">Event ID *</label>
+                        <input type="text" class="form-input" id="cancelEventId" placeholder="e.g. 129mqpqtkk8p0oadicc0o5fm2o" required>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" style="margin-top: 2rem;">
+                        <span>Cancel Appointment</span>
+                        <span>🗑️</span>
+                    </button>
+
+                    <div class="loading" id="cancelLoading">
+                        <div class="spinner"></div>
+                        <span>Cancelling appointment...</span>
+                    </div>
+
+                    <div id="cancelResult" style="margin-top: 1.5rem;"></div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Drug Info Tab -->
+        <div id="druginfo" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Drug Information</h2>
+                    <p class="card-subtitle">Enter a drug name to view use cases and side effects</p>
+                </div>
+
+                <div class="info-banner">
+                    <div class="info-banner-title">ℹ️ Note</div>
+                    <div class="info-banner-text">Results are informational and extracted from publicly available drug label data. This does not replace medical advice.</div>
+                </div>
+
+                <form id="drugInfoForm" onsubmit="fetchDrugInfo(event)">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Drug name *</label>
+                            <input type="text" class="form-input" id="drugNameInput" placeholder="e.g. Sitagliptin" required>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        <span>Get Info</span>
+                        <span>🔎</span>
+                    </button>
+
+                    <div class="loading" id="drugInfoLoading">
+                        <div class="spinner"></div>
+                        <span>Fetching drug information...</span>
+                    </div>
+                </form>
+
+                <div class="result-card" id="drugInfoResult">
+                    <div class="result-header">
+                        <div class="result-icon negative">
+                            <span>💊</span>
+                        </div>
+                        <div>
+                            <h3 class="result-title" id="drugInfoTitle">Results</h3>
+                        </div>
+                    </div>
+
+                    <div class="result-message" id="drugInfoUseCases"></div>
+                    <div style="height: 1rem;"></div>
+                    <div class="result-message" id="drugInfoSideEffects"></div>
+                </div>
+            </div>
+        </div>
+
+    <script>
+        // Configuration
+        const API_BASE = window.location.origin;
+        let selectedSlot = null;
+        let currentUserId = null;
+
+        // Fetch current user ID on page load
+        (async function initUserId() {
+            try {
+                const resp = await fetch(`${API_BASE}/me`, { credentials: 'include' });
+                if (resp.ok) {
+                    const d = await resp.json();
+                    currentUserId = d.user_id;
+                }
+            } catch (e) {
+                console.warn('Failed to fetch user_id; will use fallback', e);
+            }
+        })();
+
+        // Dark mode toggle
+        const themeToggle = document.getElementById('themeToggle');
+        const html = document.documentElement;
+
+        function setTheme(isDark) {
+            if (isDark) {
+                html.classList.add('dark');
+                themeToggle.textContent = '☀️';
+                localStorage.setItem('theme', 'dark');
+            } else {
+                html.classList.remove('dark');
+                themeToggle.textContent = '🌙';
+                localStorage.setItem('theme', 'light');
+            }
+        }
+
+        // Initialize theme from localStorage or system preference
+        const savedTheme = localStorage.getItem('theme');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        setTheme(savedTheme === 'dark' || (!savedTheme && prefersDark));
+
+        themeToggle.addEventListener('click', () => {
+            const isDark = html.classList.contains('dark');
+            setTheme(!isDark);
+        });
+
+        // Tab Switching
+        function switchTab(event, tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tabName).classList.add('active');
+        }
+
+        function toParagraphsHtml(text) {
+            const safe = escapeHtml(String(text ?? ''));
+            const paragraphs = safe
+                .split(/\n\s*\n/g)
+                .map(p => p.trim())
+                .filter(Boolean)
+                .map(p => `<p>${p}</p>`)
+                .join('');
+            return paragraphs || `<p>${safe}</p>`;
+        }
+
+        async function fetchDrugInfo(event) {
+            event.preventDefault();
+
+            const drugName = document.getElementById('drugNameInput').value.trim();
+            if (!drugName) return;
+
+            const loading = document.getElementById('drugInfoLoading');
+            const resultCard = document.getElementById('drugInfoResult');
+
+            const useCasesDiv = document.getElementById('drugInfoUseCases');
+            const sideEffectsDiv = document.getElementById('drugInfoSideEffects');
+            const titleEl = document.getElementById('drugInfoTitle');
+
+            loading.classList.add('show');
+            resultCard.classList.remove('show');
+
+            useCasesDiv.innerHTML = '';
+            sideEffectsDiv.innerHTML = '';
+            titleEl.textContent = `Results for "${drugName}"`;
+
+            try {
+                const url = `${API_BASE}/drug_info?drug_name=${encodeURIComponent(drugName)}`;
+                const resp = await fetch(url);
+                const data = await resp.json().catch(() => null);
+
+                loading.classList.remove('show');
+
+                if (!resp.ok) {
+                    const msg = (data && data.detail) ? String(data.detail) : 'Failed to fetch drug info.';
+                    useCasesDiv.innerHTML = `<p><strong>Error:</strong> ${escapeHtml(msg)}</p>`;
+                    sideEffectsDiv.innerHTML = '';
+                    resultCard.classList.add('show');
+                    return;
+                }
+
+                if (typeof data === 'string') {
+                    useCasesDiv.innerHTML = `<p>${escapeHtml(data)}</p>`;
+                    sideEffectsDiv.innerHTML = '';
+                    resultCard.classList.add('show');
+                    return;
+                }
+
+                const useCases = (data && data["Use Cases"]) ?? 'No use cases found.';
+                const sideEffects = (data && data["Side Effects"]) ?? 'No side effects found.';
+
+                useCasesDiv.innerHTML = `<h4 style="margin-bottom:0.5rem; color: var(--primary);">Use Cases</h4>${toParagraphsHtml(useCases)}`;
+                sideEffectsDiv.innerHTML = `<h4 style="margin-bottom:0.5rem; color: var(--primary);">Side Effects</h4>${toParagraphsHtml(sideEffects)}`;
+
+                resultCard.classList.add('show');
+            } catch (e) {
+                loading.classList.remove('show');
+                useCasesDiv.innerHTML = `<p><strong>Error:</strong> ${escapeHtml('Network error. Please try again.')}</p>`;
+                sideEffectsDiv.innerHTML = '';
+                resultCard.classList.add('show');
+                console.error(e);
+            }
+        }
+
+        // Chat Functions
+        async function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            
+            if (!message) return;
+
+            // Add user message to chat
+            addMessage(message, 'user');
+            input.value = '';
+            
+            // Show loading
+            document.getElementById('chatLoading').classList.add('show');
+
+            try {
+                const response = await fetch(`${API_BASE}/chat`, {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ message: message })
+                });
+
+                const data = await response.json();
+                
+                // Hide loading
+                document.getElementById('chatLoading').classList.remove('show');
+
+                if (!response.ok) {
+                    console.error('Chat error response:', data);
+                    addMessage((data && data.detail) || 'I apologize, I encountered an error.', 'assistant');
+                    return;
+                }
+
+                const assistantText = (typeof data === 'string')
+                    ? data
+                    : (data && (data.response || data.message)) || 'I apologize, I encountered an error.';
+
+                // Add assistant response
+                addMessage(assistantText, 'assistant');
+            } catch (error) {
+                document.getElementById('chatLoading').classList.remove('show');
+                addMessage('Sorry, I couldn\'t process your request. Please try again.', 'assistant');
+                console.error('Error:', error);
+            }
+        }
+
+        function addMessage(text, sender) {
+            const messagesDiv = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+            
+            const avatar = sender === 'user' ? '👤' : '🤖';
+            const time = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+            const contentHtml = (sender === 'assistant') ? formatAssistantMessage(text) : escapeHtml(text);
+            
+            messageDiv.innerHTML = `
+                <div class="message-avatar">${avatar}</div>
+                <div>
+                    <div class="message-content">${contentHtml}</div>
+                    <div class="message-time">${time}</div>
+                </div>
+            `;
+            
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function linkify(escapedText) {
+            return escapedText.replace(/\[(.+?)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+        }
+
+        function formatAssistantMessage(text) {
+            const raw = String(text ?? '').replace(/\r\n/g, '\n');
+            const lines = raw.split('\n');
+
+            let html = '';
+            let inList = false;
+
+            const closeListIfOpen = () => {
+                if (inList) {
+                    html += '</ul>';
+                    inList = false;
+                }
+            };
+
+            for (const line of lines) {
+                const trimmed = line.trim();
+
+                if (trimmed === '') {
+                    closeListIfOpen();
+                    continue;
+                }
+
+                const bulletMatch = trimmed.match(/^[-*]\s+(.*)$/);
+                if (bulletMatch) {
+                    if (!inList) {
+                        html += '<ul>';
+                        inList = true;
+                    }
+                    const li = linkify(escapeHtml(bulletMatch[1]));
+                    html += `<li>${li}</li>`;
+                    continue;
+                }
+
+                closeListIfOpen();
+
+                const p = linkify(escapeHtml(trimmed));
+                html += `<p>${p}</p>`;
+            }
+
+            closeListIfOpen();
+            return html || '<p>I apologize, I encountered an error.</p>';
+        }
+
+        // Allow Enter to send message
+        document.getElementById('chatInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        // Diabetes Prediction
+        async function predictDiabetes(event) {
+            event.preventDefault();
+            
+            const form = event.target;
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData.entries());
+
+            const numericFields = ['age', 'bmi', 'HbA1c_level', 'blood_glucose_level'];
+            numericFields.forEach(key => {
+                if (key in data) data[key] = parseFloat(data[key]);
+            });
+
+            if ('age' in data) data.age = parseInt(data.age, 10);
+
+            console.log('Diabetes request payload:', data);
+
+            document.getElementById('diabetesLoading').classList.add('show');
+            document.getElementById('diabetesResult').classList.remove('show');
+
+            try {
+                const response = await fetch(`${API_BASE}/predict_diabetes`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                console.log('Diabetes response status:', response.status);
+                console.log('Diabetes response body:', result);
+                
+                document.getElementById('diabetesLoading').classList.remove('show');
+
+                if (!response.ok) {
+                    console.error('Diabetes API error response:', result);
+                    alert((result && result.detail) ? JSON.stringify(result.detail) : 'Error analyzing data. Please check your inputs.');
+                    return;
+                }
+
+                showDiabetesResult(result);
+            } catch (error) {
+                document.getElementById('diabetesLoading').classList.remove('show');
+                alert('Error analyzing data. Please try again.');
+                console.error('Error:', error);
+            }
+        }
+
+        function showDiabetesResult(result) {
+            const resultCard = document.getElementById('diabetesResult');
+            const icon = document.getElementById('resultIcon');
+            const emoji = document.getElementById('resultEmoji');
+            const title = document.getElementById('resultTitle');
+            const probability = document.getElementById('resultProbability');
+            const message = document.getElementById('resultMessage');
+
+            let isDiabetic = false;
+            let probPercent = null;
+            let rawText = '';
+
+            if (typeof result === 'string') {
+                rawText = result;
+                const probMatch = rawText.match(/Probability of being diabetic:\s*([0-9]+(?:\.[0-9]+)?)%/i);
+                if (probMatch) probPercent = parseFloat(probMatch[1]);
+
+                const diagnosisMatch = rawText.match(/Diagnosis:\s*(diabetic|non-diabetic)\.?/i);
+                if (diagnosisMatch) isDiabetic = diagnosisMatch[1].toLowerCase() === 'diabetic';
+            } else if (result && typeof result === 'object') {
+                rawText = (result.message || result.response || JSON.stringify(result));
+                isDiabetic = result.prediction === 1 || result.prediction === 'Diabetic' || result.diagnosis === 'diabetic';
+                if (typeof result.probability === 'number') probPercent = result.probability * 100;
+            }
+
+            if (isDiabetic) {
+                icon.className = 'result-icon positive';
+                emoji.textContent = '⚠️';
+                title.textContent = 'Elevated Risk Detected';
+                probability.textContent = (probPercent !== null) ? `${probPercent.toFixed(1)}% risk` : '';
+                message.textContent = rawText || 'Based on your health metrics, our AI model has detected an elevated risk for diabetes.';
+            } else {
+                icon.className = 'result-icon negative';
+                emoji.textContent = '✓';
+                title.textContent = 'Lower Risk';
+                probability.textContent = (probPercent !== null) ? `${(100 - probPercent).toFixed(1)}% healthy` : '';
+                message.textContent = rawText || 'Good news! Based on your current health metrics, you appear to have a lower risk for diabetes.';
+            }
+
+            resultCard.classList.add('show');
+        }
+
+        // Appointments
+        async function loadSlots() {
+            document.getElementById('slotsLoading').classList.add('show');
+            document.getElementById('slotsGrid').innerHTML = '';
+
+            try {
+                const response = await fetch(`${API_BASE}/list_available_slots`);
+                const slots = await response.json();
+                
+                document.getElementById('slotsLoading').classList.remove('show');
+                displaySlots(slots);
+            } catch (error) {
+                document.getElementById('slotsLoading').classList.remove('show');
+                alert('Error loading slots. Please try again.');
+                console.error('Error:', error);
+            }
+        }
+
+        function displaySlots(slots) {
+            const grid = document.getElementById('slotsGrid');
+            grid.innerHTML = '';
+
+            const isObject = slots && typeof slots === 'object' && !Array.isArray(slots);
+            if (!isObject || Object.keys(slots).length === 0) {
+                grid.innerHTML = '<p style="grid-column: 1 / -1; text-align: center; color: var(--text-secondary);">No available slots at this time.</p>';
+                console.error('Unexpected slots payload:', slots);
+                return;
+            }
+
+            Object.entries(slots).forEach(([dateLabel, times]) => {
+                if (!Array.isArray(times) || times.length === 0) return;
+
+                times.forEach(timeRange => {
+                    const card = document.createElement('div');
+                    card.className = 'slot-card';
+
+                    const slot = { dateLabel, timeRange };
+                    card.onclick = () => selectSlot(slot, card);
+
+                    card.innerHTML = `
+                        <div class="slot-time">${timeRange}</div>
+                        <div class="slot-date">${dateLabel}</div>
+                    `;
+
+                    grid.appendChild(card);
+                });
+            });
+        }
+
+        function selectSlot(slot, cardElement) {
+            document.querySelectorAll('.slot-card').forEach(card => card.classList.remove('selected'));
+            cardElement.classList.add('selected');
+            selectedSlot = slot;
+            document.getElementById('appointmentForm').style.display = 'block';
+        }
+
+        async function bookAppointment(event) {
+            event.preventDefault();
+
+            if (!selectedSlot) {
+                alert('Please select a time slot first.');
+                return;
+            }
+
+            const data = {
+                date_str: selectedSlot.dateLabel.replace(/^[A-Za-z]+,\s*/, ''), // strip weekday prefix
+                time_str: String(selectedSlot.timeRange || '').split(' - ')[0],
+                user_id: currentUserId || 'web_user',
+                patient_name: document.getElementById('patientName').value,
+                patient_age: parseInt(document.getElementById('patientAge').value, 10),
+                description: document.getElementById('appointmentReason').value,
+                patient_email: document.getElementById('patientEmail').value
+            };
+
+            console.log('Booking request payload:', data);
+
+            document.getElementById('bookingLoading').classList.add('show');
+
+            try {
+                const response = await fetch(`${API_BASE}/book_appointment`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+                
+                document.getElementById('bookingLoading').classList.remove('show');
+
+                if (!response.ok) {
+                    console.error('Booking error response:', result);
+                    alert((result && result.detail) ? JSON.stringify(result.detail) : 'Error booking appointment. Please check your inputs.');
+                    return;
+                }
+
+                // Store event_id for potential cancellation
+                const eventId = result.event_id;
+                
+                document.getElementById('appointmentDetails').innerHTML = `
+                    <p style="margin-top: 1rem;">Your appointment is scheduled for:<br>
+                    <strong>${selectedSlot.dateLabel}</strong><br>
+                    at <strong>${selectedSlot.timeRange}</strong></p>
+                    <p style="margin-top: 1rem; font-size: 0.9rem;">A confirmation has been sent to ${data.patient_email}</p>
+                    <p style="margin-top: 1rem; font-size: 0.8rem; opacity: 0.7;">Event ID: ${eventId}</p>
+                    <button class="btn btn-secondary" style="margin-top: 1rem;" onclick="cancelAppointment('${eventId}')">Cancel Appointment</button>
+                `;
+                
+                document.getElementById('appointmentSuccess').classList.add('show');
+                document.getElementById('appointmentForm').style.display = 'none';
+                event.target.reset();
+                selectedSlot = null;
+                
+                // Clear slots
+                document.getElementById('slotsGrid').innerHTML = '';
+            } catch (error) {
+                document.getElementById('bookingLoading').classList.remove('show');
+                alert('Error booking appointment. Please try again.');
+                console.error('Error:', error);
+            }
+        }
+
+        async function cancelAppointment(eventId) {
+            if (!confirm('Are you sure you want to cancel this appointment?')) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/cancel_appointment`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ event_id: eventId })
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    console.error('Cancel error response:', result);
+                    alert((result && result.detail) ? JSON.stringify(result.detail) : 'Error cancelling appointment.');
+                    return;
+                }
+
+                // Update UI to show cancellation
+                document.getElementById('appointmentDetails').innerHTML = `
+                    <p style="margin-top: 1rem;">Your appointment has been cancelled.</p>
+                    <p style="margin-top: 1rem; font-size: 0.8rem; opacity: 0.7;">Event ID: ${eventId}</p>
+                `;
+                alert('Appointment cancelled successfully.');
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error cancelling appointment. Please try again.');
+            }
+        }
+
+        async function cancelById(event) {
+            event.preventDefault();
+            const eventId = document.getElementById('cancelEventId').value.trim();
+            const resultDiv = document.getElementById('cancelResult');
+
+            if (!eventId) {
+                resultDiv.innerHTML = `<p style="color: var(--text-secondary);">Please enter an Event ID.</p>`;
+                return;
+            }
+
+            // Show confirmation inline instead of popup
+            resultDiv.innerHTML = `
+                <div style="margin-top: 1rem; padding: 1rem; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--bg-secondary);">
+                    <p style="color: var(--text-primary); margin-bottom: 1rem;">Are you sure you want to cancel this appointment?</p>
+                    <button class="btn btn-primary" style="margin-right: 0.5rem;" onclick="confirmCancel('${eventId}')">Yes, Cancel</button>
+                    <button class="btn btn-secondary" onclick="clearCancelResult()">No</button>
+                </div>
+            `;
+            return;
+        }
+
+        async function confirmCancel(eventId) {
+            const resultDiv = document.getElementById('cancelResult');
+
+            document.getElementById('cancelLoading').classList.add('show');
+            resultDiv.innerHTML = '';
+
+            try {
+                const response = await fetch(`${API_BASE}/cancel_appointment`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ event_id: eventId })
+                });
+
+                const result = await response.json();
+
+                document.getElementById('cancelLoading').classList.remove('show');
+
+                if (!response.ok) {
+                    console.error('Cancel error response:', result);
+                    const msg = (result && result.detail) ? JSON.stringify(result.detail) : 'Error cancelling appointment.';
+                    resultDiv.innerHTML = `<p style="color: #E74C3C;">${msg}</p>`;
+                    return;
+                }
+
+                resultDiv.innerHTML = `<p style="color: var(--primary);">Appointment cancelled successfully.</p>`;
+                document.getElementById('cancelEventId').value = '';
+            } catch (error) {
+                document.getElementById('cancelLoading').classList.remove('show');
+                resultDiv.innerHTML = `<p style="color: #E74C3C;">Error cancelling appointment. Please try again.</p>`;
+                console.error('Error:', error);
+            }
+        }
+
+        function clearCancelResult() {
+            document.getElementById('cancelResult').innerHTML = '';
+        }
+    </script>
+</body>
+</html>

@@ -1,3 +1,7 @@
+# TODO:-
+# Use filters when storing and retrieving from cache to prevent mixing up responses for different users
+# don't cache queries related to appointments
+
 from langchain.agents import (
     AgentExecutor,
     create_react_agent,
@@ -9,34 +13,36 @@ from langchain_community.chat_message_histories import SQLChatMessageHistory
 from langchain_core.prompts import PromptTemplate
 from langchain_core.runnables.history import RunnableWithMessageHistory
 
-from agents.base_agent import BaseAgent
-from container import create_agent_tools
-from scripts import create_folder, get_api_key
-from settings import agent_config, prompts
-from settings.logger import get_logger
-from settings.paths import DATA_DIR
+from src.agents.base_agent import BaseAgent
+from src.container import create_agent_tools
+from src.scripts import create_folder
+from src.services.cache.redis_service import RedisService
+from src.settings import agent_config, prompts
+from src.settings.logger import get_logger
+from src.settings.paths import DATA_DIR
+from src.settings.settings import settings
 
 logger = get_logger(__name__)
 
 
 class QueryHandlerAgent(BaseAgent):
-    def __init__(self):
+    def __init__(self, enable_cache=True):
         """
         Initialize the QueryHandlerAgent with RAG system and LLM.
-
-        Args:
-            content_path: Path to the content directory for the RAG system
-            index_path: Path to the index directory for the RAG system
-            rerank: Whether to enable reranking in the RAG system (default: True)
-            max_search_results: Maximum number of search results to retrieve (default: 3)
         """
+        self.enable_cache = enable_cache
+
         self.db_path = create_folder.create(DATA_DIR / "database") / "chat_history.db"
 
         logger.info("Initializing LLM...")
-        self.llm = ChatCohere(cohere_api_key=get_api_key.get_key("COHERE"))
+        self.llm = ChatCohere(cohere_api_key=settings.COHERE)
 
         logger.info("Initializing tools...")
-        self.agent_tools = create_agent_tools()  # AgentTools(rag=self.rag)
+        self.agent_tools = create_agent_tools()
+        
+        if self.enable_cache:
+            logger.info("Initializing Redis cache...")
+            self.cache = RedisService(name="MediCare_AI")
 
         super().__init__()
 
@@ -113,6 +119,16 @@ class QueryHandlerAgent(BaseAgent):
                     "gender='Male', age=30, hypertension='yes', heart_disease='no', smoking_history='never', bmi=25.0, HbA1c_level=5.5, blood_glucose_level=120"
                 ),
             ),
+            Tool(
+                func=self.agent_tools.search_drug,
+                name="search_drug",
+                description=(
+                    "Find use cases and the side effects of drugs using DailyMed website. "
+                    "Use this tool if the user asks for the use cases or side effects of a specific drug. "
+                    "Drug name is passed as a string. If the drug name is provided incorrectly by the user, "
+                    "feel free to fix it. Summarize the the use cases and the side effects if they are too long."
+                ),
+            ),
         ]
 
     def _init_agent(self):
@@ -159,7 +175,13 @@ class QueryHandlerAgent(BaseAgent):
         Returns:
             The agent's response after processing the query and using available tools
         """
-        query = f"[User ID: {user_id}\n{query}"
+        if self.enable_cache:
+            if response := self.cache.retrieve(key=query):
+                logger.info("Cache hit. Responding from cache...")
+                return response[0]["response"]
+            logger.info("Cache miss. Invoking LLM...")
+
+        query_with_id = f"[User ID: {user_id}]\n{query}"
 
         h = self.get_history(user_id)
         last_n_messages = "\n".join(
@@ -168,17 +190,17 @@ class QueryHandlerAgent(BaseAgent):
         )
 
         result = self.agent_with_history.invoke(
-            {"input": query, "history": last_n_messages},
+            {"input": query_with_id, "history": last_n_messages},
             config={"configurable": {"session_id": user_id}},
         )
+        if self.enable_cache:
+            self.cache.store(key=query, value=result["output"])
 
-        return result
+        return result["output"]
 
 
 if __name__ == "__main__":
     agent = QueryHandlerAgent()
-    result = agent.run(
-        "I have a really bad headache. What should I do?", "test_user_id"
-    )
+    result = agent.run("How can I treat my headache?", "test_user_id2")
 
     print(result)

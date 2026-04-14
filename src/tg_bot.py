@@ -1,5 +1,3 @@
-import json
-import os
 from datetime import datetime, timedelta
 
 from dotenv import load_dotenv
@@ -14,10 +12,10 @@ from telegram.ext import (
     filters,
 )
 
-from agents.query_handler_agent import QueryHandlerAgent
-from scripts import get_api_key
-from services.database.database_service import DatabaseOpsService
-from settings.logger import get_logger
+from src.agents.query_handler_agent import QueryHandlerAgent
+from src.services.database.database_service import DatabaseOpsService
+from src.settings.logger import get_logger
+from src.settings.settings import settings
 
 load_dotenv()
 logger = get_logger(__name__)
@@ -25,14 +23,14 @@ logger = get_logger(__name__)
 
 class TelegramBot:
     def __init__(self, agent: QueryHandlerAgent, db: DatabaseOpsService):
-        self.admins = json.loads(os.getenv("ADMINS"))
+        self.admins = settings.ADMINS
 
         self.agent = agent
         self.db = db
 
         self.application = (
             Application.builder()
-            .token(os.getenv("TELEGRAM_BOT_TOKEN"))
+            .token(settings.TELEGRAM_BOT_TOKEN)
             .concurrent_updates(True)
             .build()
         )
@@ -138,7 +136,7 @@ class TelegramBot:
             "Please wait while I add the new content to my knowledge base..."
         )
 
-        self.agent.rag.update_vectorstore(content)
+        self.agent.agent_tools.search_service.db_service.rag.update_vectorstore(content)
         await msg.edit_text("Content added successfully")
 
     async def handle_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -147,7 +145,7 @@ class TelegramBot:
 
         await update.message.chat.send_action("typing")
         response = self.agent.run(query, user_id)
-        await update.message.reply_text(response["output"])
+        await update.message.reply_text(response)
 
     async def send_medical_fact(self, context: ContextTypes.DEFAULT_TYPE):
         """Send a medical fact to bot subscribers"""
@@ -233,3 +231,34 @@ if __name__ == "__main__":
     bot = TelegramBot(agent, db)
 
     bot.run()
+
+
+# TODO:
+# 🏥 1. Patient & Appointment Management
+
+# View My Appointments – Let patients list their upcoming bookings.
+# → e.g., /my_appointments
+
+# ⚕️ 3. Medical Assistant Features
+
+# Expand beyond diabetes:
+# Symptom Checker – Collect symptoms and suggest possible conditions.
+# Medication Reminders – Allow users to set reminders for their meds.
+# Vitals Tracker – Log and visualize user vitals (blood sugar, pressure, etc.) over time.
+
+# 🧠 4. AI / Data Features
+
+# Summarization – Summarize long medical documents or discharge summaries.
+# Voice Input / Output – Add speech-to-text and text-to-speech support for accessibility.
+# Image Analysis – Let users upload reports (e.g., blood tests) and summarize results.
+
+# 👩‍💼 5. Admin Tools
+
+# Admin Dashboard – View bookings, delete or confirm them.
+# Usage Logs / Analytics – Track number of interactions, most common queries, etc.
+# Backup and Restore – Save and restore the FAISS index and knowledge base.
+
+# 🔒 6. Security & Compliance
+
+# For real-world use, this is critical:
+# Patient Verification – OTP/email confirmation before booking.

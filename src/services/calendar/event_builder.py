@@ -1,7 +1,7 @@
 import datetime
 from urllib.parse import quote_plus, urlencode
 
-from settings import clinic_config
+from src.settings import clinic_config
 
 
 class EventBuilder:

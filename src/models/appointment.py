@@ -5,7 +5,11 @@ from pydantic import BaseModel, Field, field_validator
 
 class BookAppointmentInput(BaseModel):
     date_str: date = Field(..., description="Appointment date")
-    time_str: time = Field(..., description="Appointment time")
+    time_str: time = Field(
+        ...,
+        description="Appointment time",
+        json_schema_extra={"examples": ["01:40 PM", "14:30", "9:00"]},
+    )
     user_id: str = Field(..., description="User ID")
     patient_name: str = Field(..., description="Name of the patient")
     patient_age: int = Field(..., description="Age of the patient")

@@ -1,7 +1,7 @@
-from scripts import create_folder
-from services.database.db_schema import APPOINTMENTS_TABLE, BOT_SUBS_TABLE
-from settings.paths import DATA_DIR
-from utils.db_manager import db_connection
+from src.scripts import create_folder
+from src.services.database.db_schema import APPOINTMENTS_TABLE, BOT_SUBS_TABLE
+from src.settings.paths import DATA_DIR
+from src.utils.db_manager import db_connection
 
 
 class DatabaseOpsService:

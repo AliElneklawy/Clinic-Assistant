@@ -1,8 +1,8 @@
 import numpy as np
 import pandas as pd
 
-from models.classify_diabetes import ClassifyDiabetesInput
-from scripts import unpack_data
+from src.models.classify_diabetes import ClassifyDiabetesInput
+from src.scripts import unpack_data
 
 
 class ClassifyDiabetesService:
@@ -59,34 +59,26 @@ class ClassifyDiabetesService:
 
         return df
 
-    def classify_diabetes(self, data: str):
+    def classify_diabetes(self, data: str | ClassifyDiabetesInput):
         """
         Classify a patient's diabetes based on various factors.
         returns a string with the probability of the patient being diabetic and the final diagnosis.
         """
-        (
-            gender,
-            age,
-            hypertension,
-            heart_disease,
-            smoking_history,
-            bmi,
-            HbA1c_level,
-            blood_glucose_level,
-        ) = unpack_data.unpack(data, ClassifyDiabetesInput)
+        if isinstance(data, str):
+            data = unpack_data.unpack(data, ClassifyDiabetesInput)
 
         df = self.preprocess(
-            gender,
-            age,
-            hypertension,
-            heart_disease,
-            smoking_history,
-            bmi,
-            HbA1c_level,
-            blood_glucose_level,
+            data.gender,
+            data.age,
+            data.hypertension,
+            data.heart_disease,
+            data.smoking_history,
+            data.bmi,
+            data.HbA1c_level,
+            data.blood_glucose_level,
         )
 
         prediction = self.model.predict(df)
         prediction_proba = self.model.predict_proba(df)[0][1]
 
-        return f"Probability of being diabetic: {(prediction_proba * 100).round(2)}%.\Diagnosis: {'diabetic' if prediction == 1 else 'non-diabetic'}."
+        return f"Probability of being diabetic: {(prediction_proba * 100).round(2)}%.\nDiagnosis: {'diabetic' if prediction == 1 else 'non-diabetic'}."
