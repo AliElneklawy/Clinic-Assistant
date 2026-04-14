@@ -1,16 +1,14 @@
 from pathlib import Path
 
-from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 
-from .endpoints import router
 from ..settings.settings import settings
+from .endpoints import router
 
-load_dotenv()
 
 app = FastAPI(
     title="Clinic AI API", description="Medical AI assistant API", version="2.0"

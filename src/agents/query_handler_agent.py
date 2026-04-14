@@ -1,3 +1,7 @@
+# TODO:-
+# Use filters when storing and retrieving from cache to prevent mixing up responses for different users
+# don't cache queries related to appointments
+
 from langchain.agents import (
     AgentExecutor,
     create_react_agent,
@@ -11,30 +15,34 @@ from langchain_core.runnables.history import RunnableWithMessageHistory
 
 from src.agents.base_agent import BaseAgent
 from src.container import create_agent_tools
-from src.scripts import create_folder, get_api_key
+from src.scripts import create_folder
 from src.services.cache.redis_service import RedisService
 from src.settings import agent_config, prompts
 from src.settings.logger import get_logger
 from src.settings.paths import DATA_DIR
+from src.settings.settings import settings
 
 logger = get_logger(__name__)
 
 
 class QueryHandlerAgent(BaseAgent):
-    def __init__(self):
+    def __init__(self, enable_cache=True):
         """
         Initialize the QueryHandlerAgent with RAG system and LLM.
         """
+        self.enable_cache = enable_cache
+
         self.db_path = create_folder.create(DATA_DIR / "database") / "chat_history.db"
 
         logger.info("Initializing LLM...")
-        self.llm = ChatCohere(cohere_api_key=get_api_key.get_key("COHERE"))
+        self.llm = ChatCohere(cohere_api_key=settings.COHERE)
 
         logger.info("Initializing tools...")
         self.agent_tools = create_agent_tools()
-
-        logger.info("Initializing Redis cache...")
-        self.cache = RedisService(name="MediCare_AI")
+        
+        if self.enable_cache:
+            logger.info("Initializing Redis cache...")
+            self.cache = RedisService(name="MediCare_AI")
 
         super().__init__()
 
@@ -167,11 +175,12 @@ class QueryHandlerAgent(BaseAgent):
         Returns:
             The agent's response after processing the query and using available tools
         """
-        if response := self.cache.retrieve(key=query):
-            logger.info("Cache hit. Responding from cache...")
-            return response[0]["response"]
+        if self.enable_cache:
+            if response := self.cache.retrieve(key=query):
+                logger.info("Cache hit. Responding from cache...")
+                return response[0]["response"]
+            logger.info("Cache miss. Invoking LLM...")
 
-        logger.info("Cache miss. Invoking LLM...")
         query_with_id = f"[User ID: {user_id}]\n{query}"
 
         h = self.get_history(user_id)
@@ -184,8 +193,8 @@ class QueryHandlerAgent(BaseAgent):
             {"input": query_with_id, "history": last_n_messages},
             config={"configurable": {"session_id": user_id}},
         )
-
-        self.cache.store(key=query, value=result["output"])
+        if self.enable_cache:
+            self.cache.store(key=query, value=result["output"])
 
         return result["output"]
 
