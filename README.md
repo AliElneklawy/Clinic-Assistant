@@ -1,4 +1,4 @@
-# Clinic Assistant (MediCare AI)
+# MediCare AI
 
 An AI-powered clinic assistant that combines:
 
@@ -25,9 +25,7 @@ An AI-powered clinic assistant that combines:
 - [Data and Persistence](#data-and-persistence)
 - [Knowledge Base and Crawling](#knowledge-base-and-crawling)
 - [Dependency Wiring (Important)](#dependency-wiring-important)
-- [Roadmap](#roadmap)
 - [Disclaimer](#disclaimer)
-- [License](#license)
 
 ---
 
@@ -341,3 +339,7 @@ To avoid service drift, all runtime dependencies must be created in one place: `
 - If adding a new service, wire it in `src/container.py` first.
 - Reuse that wiring from dependency providers instead of re-instantiating.
 - Avoid module-level “hidden” singletons unless lifecycle is explicitly documented.
+
+##  Disclaimer
+This project is for informational and workflow-assistance purposes.
+It does not replace professional medical diagnosis, treatment, or emergency care.
