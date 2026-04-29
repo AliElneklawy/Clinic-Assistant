@@ -24,7 +24,7 @@ An AI-powered clinic assistant that combines:
 - [Docker](#docker)
 - [Data and Persistence](#data-and-persistence)
 - [Knowledge Base and Crawling](#knowledge-base-and-crawling)
-- [Dependency Wiring (Important)](#dependency-wiring-important)
+- [Dependency Wiring (Important)](#Dependency-Wiring-(Single-Composition-Root))
 - [Disclaimer](#disclaimer)
 
 ---
