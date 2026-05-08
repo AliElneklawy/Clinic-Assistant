@@ -25,6 +25,16 @@ from src.settings.settings import settings
 logger = get_logger(__name__)
 
 
+_APPOINTMENT_KEYWORDS: tuple[str, ...] = (
+    "book",
+    "cancel",
+    "appointment",
+    "schedule",
+    "reschedule",
+    "slot",
+)
+
+
 class QueryHandlerAgent(BaseAgent):
     def __init__(self, enable_cache=True):
         """
@@ -39,7 +49,7 @@ class QueryHandlerAgent(BaseAgent):
 
         logger.info("Initializing tools...")
         self.agent_tools = create_agent_tools()
-        
+
         if self.enable_cache:
             logger.info("Initializing Redis cache...")
             self.cache = RedisService(name="MediCare_AI")
@@ -165,6 +175,11 @@ class QueryHandlerAgent(BaseAgent):
             session_id=user_id,
         )
 
+    @staticmethod
+    def is_appointment_query(query: str):
+        query_lower = query.lower()
+        return any(keyword in query_lower for keyword in _APPOINTMENT_KEYWORDS)
+
     def run(self, query: str, user_id: str):
         """
         Execute the agent with a given query.
@@ -175,7 +190,9 @@ class QueryHandlerAgent(BaseAgent):
         Returns:
             The agent's response after processing the query and using available tools
         """
-        if self.enable_cache:
+        is_appointment = self.is_appointment_query(query)
+
+        if self.enable_cache and not is_appointment:
             if response := self.cache.retrieve(key=query):
                 logger.info("Cache hit. Responding from cache...")
                 return response[0]["response"]
@@ -193,7 +210,7 @@ class QueryHandlerAgent(BaseAgent):
             {"input": query_with_id, "history": last_n_messages},
             config={"configurable": {"session_id": user_id}},
         )
-        if self.enable_cache:
+        if self.enable_cache and not is_appointment:
             self.cache.store(key=query, value=result["output"])
 
         return result["output"]

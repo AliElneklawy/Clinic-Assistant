@@ -1,9 +1,22 @@
+x-base: &base
+  image: medicareai
+  build: .
+  restart: unless-stopped
+  env_file: 
+    - .env
+
 services:
+  cli:
+    <<: *base
+    command: python -m src.cli
   telegram-bot:
-    build: .
-    command: uv run .\src\tg_bot.py
-    restart: unless-stopped
+    <<: *base
+    command: python -m src.tg_bot
   email_service:
-    build: .
-    command: uv run .\src\services\email\email_service.py
-    restart: unless-stopped
+    <<: *base
+    command: python -m src.services.email.email_service
+  api:
+    <<: *base
+    ports: 
+      - "8000:8000"
+    command: uvicorn src.api.main:app --host 127.0.0.1 --port 8000

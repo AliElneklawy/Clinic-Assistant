@@ -22,3 +22,4 @@ logs/
 # Databases
 *.db
 *.db
+data/database/chat_history.db
