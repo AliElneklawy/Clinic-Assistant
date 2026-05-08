@@ -1,6 +1,14 @@
-FROM python:3.13.5-slim
+# ======================== Build Stage ======================== 
 
-RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates
+FROM python:3.12-slim AS builder
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl ca-certificates \
+    build-essential \
+    libxml2-dev \
+    libxslt1-dev \
+    zlib1g-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 ADD https://astral.sh/uv/install.sh /uv-installer.sh
 
@@ -12,10 +20,28 @@ WORKDIR /app
 
 COPY pyproject.toml uv.lock ./
 
-RUN uv sync --frozen --no-dev
+RUN uv sync --frozen  # Installs deps in .venv folder
 
-ENV PATH="/app/.venv/bin:${PATH}"
+# ======================== Runtime Stage ======================== 
 
-COPY src/ .
+FROM python:3.12-slim
 
-CMD ["uv", "run", ".\src\tg_bot.py"]
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libxml2 libxslt1.1 \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY --from=builder /app/.venv /app/.venv
+
+COPY src/ ./src/
+
+ENV PATH="/app/.venv/bin:$PATH"
+
+EXPOSE 8000
+
+RUN useradd -m appuser
+
+USER appuser
+
+CMD ["python", "-m", "src.cli"]

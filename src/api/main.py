@@ -9,7 +9,6 @@ from starlette.middleware.sessions import SessionMiddleware
 from ..settings.settings import settings
 from .endpoints import router
 
-
 app = FastAPI(
     title="Clinic AI API", description="Medical AI assistant API", version="2.0"
 )
