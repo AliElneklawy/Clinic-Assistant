@@ -8,6 +8,9 @@ An AI-powered clinic assistant that combines:
 - Drug information lookup (use cases + side effects)
 - Multi-channel access (Web API, Telegram bot, CLI)
 
+<img width="1898" height="901" alt="3" src="https://github.com/user-attachments/assets/c604a557-3806-44fc-a432-f01300300985" />
+
+
 ---
 
 ## Table of Contents
@@ -91,6 +94,13 @@ The system supports:
 - Redis semantic cache for repeated queries (configurable TTL and distance threshold).
 - SQLite chat history via `SQLChatMessageHistory`.
 - Session-aware user IDs in web app using FastAPI sessions.
+
+
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/cc0bfaf5-7ea1-4ba8-8313-b4bb8e96f42a" width="48%" />
+  <img src="https://github.com/user-attachments/assets/01db3ddd-775e-41c2-87cd-6b8c1d2e68c6" width="48%" />
+</p>
+
 
 ---
 
