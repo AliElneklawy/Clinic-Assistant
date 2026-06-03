@@ -29,9 +29,11 @@ _APPOINTMENT_KEYWORDS: tuple[str, ...] = (
     "book",
     "cancel",
     "appointment",
+    "appointments",
     "schedule",
     "reschedule",
     "slot",
+    "slots",
 )
 
 

@@ -3,4 +3,4 @@ From root...
 cli: uv run python -m src.cli
 tg: uv run python -m src.tg_bot
 email: uv run python -m src.services.email.email_service
-api: uvicorn src.api.main:app
+api: uv run uvicorn src.api.main:app --host 127.0.0.1 --port 8000
